@@ -3,80 +3,237 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Incremental Habit Tracker</title>
+  <title>RPG Habit Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
-    @keyframes heartbeat {
-      0%, 100% { transform: scale(1); }
-      25%, 60% { transform: scale(1.1); }
-      40% { transform: scale(1); }
+    body, .rpg-font { font-family: 'Press Start 2P', monospace, sans-serif; }
+    .rpg-card { border: 3px solid #a78bfa; border-radius: 1rem; box-shadow: 0 2px 12px #8b5cf633; }
+    .rpg-glow { box-shadow: 0 0 20px 4px #3b82f6cc, 0 0 0 2px #a78bfa; }
+    .level-up { animation: levelup-pop 0.8s; }
+    @keyframes levelup-pop {
+      0% { transform: scale(1); }
+      20% { transform: scale(1.2) rotate(-2deg);}
+      60% { transform: scale(1.1);}
+      100% { transform: scale(1);}
     }
-    .animate-beat { animation: heartbeat 1s infinite; display: inline-block; }
-    @keyframes gradient {
-      0% { background-position: 0% 50%; }
-      50% { background-position: 100% 50%; }
-      100% { background-position: 0% 50%; }
+    .rpg-xp-bar {
+      background: linear-gradient(90deg, #4ade80, #6366f1 60%, #7c3aed);
+      box-shadow: 0 0 6px #6366f1cc;
+      transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
     }
-    .animate-gradient {
-      background-size: 200% auto;
-      animation: gradient 4s linear infinite;
+    .rpg-avatar {
+      width: 80px; height: 80px; background: #6366f1; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      box-shadow: 0 0 12px #7c3aed77;
+    }
+    .rpg-quest {
+      background: linear-gradient(90deg, #fbbf24 40%, #f472b6 100%);
+      color: #78350f;
+      font-weight: bold;
+      border-radius: 0.5rem;
+      padding: 0.25rem 0.75rem;
+      font-size: 0.85rem;
+      margin-left: 0.5rem;
+    }
+    /* RPG button borders */
+    .rpg-btn {
+      border: 2px solid #a78bfa;
+      box-shadow: 0 1px 4px #a78bfa22;
+    }
+    /* Add confetti animation for level up (hook only) */
+    .confetti {
+      pointer-events: none;
+      position: fixed;
+      left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1001; 
+      /* confetti JS or CSS animation will go here */
     }
   </style>
 </head>
-<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors min-h-screen">
+<body class="bg-gradient-to-br from-gray-50 via-purple-100 to-indigo-200 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900 text-gray-900 dark:text-gray-100 transition-colors min-h-screen rpg-font">
   <div class="container mx-auto px-4 py-8 max-w-3xl">
-    <!-- Header -->
+    <!-- RPG Header -->
     <div class="flex justify-between items-center mb-8">
-      <h1 class="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent animate-gradient">
-        Habit Incremental
-      </h1>
-      <button id="dark-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+      <div class="flex items-center gap-4">
+        <div class="rpg-avatar">
+          <i class="fas fa-hat-wizard text-4xl text-white"></i>
+          <!-- Replace with avatar builder or RPG sprite -->
+        </div>
+        <div>
+          <h1 class="text-2xl md:text-3xl font-bold text-indigo-700 dark:text-indigo-300 rpg-font">Hero of Habits</h1>
+          <div class="flex items-center gap-2 mt-2">
+            <span class="text-sm font-bold text-green-700 dark:text-green-300">Level <span id="hero-level">1</span></span>
+            <span class="text-xs">XP:</span>
+            <div class="relative w-32 h-3 bg-indigo-200 dark:bg-indigo-800 rounded">
+              <div id="xp-bar" class="absolute left-0 top-0 h-3 rounded rpg-xp-bar" style="width: 0%"></div>
+            </div>
+            <span id="hero-xp" class="text-xs ml-2">0/50</span>
+            <span id="levelup-badge" class="ml-2 hidden rpg-quest"><i class="fas fa-star"></i> LEVEL UP!</span>
+          </div>
+        </div>
+      </div>
+      <button id="dark-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition">
         <i class="fas fa-moon text-gray-600 block dark:hidden"></i>
         <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
       </button>
     </div>
     <!-- Add Habit Button -->
     <div class="flex justify-end mb-4">
-      <button id="add-habit-btn" class="bg-green-500 text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-green-600 shadow">
-        <i class="fas fa-plus"></i> Add Habit
+      <button id="add-habit-btn" class="bg-gradient-to-r from-green-400 via-indigo-500 to-purple-500 text-white px-4 py-2 rounded-full flex items-center gap-2 rpg-btn hover:scale-105 shadow">
+        <i class="fas fa-plus"></i> New Quest
       </button>
     </div>
-    <!-- Habits List -->
-    <div id="habits-list" class="space-y-6">
-      <!-- Habit cards will be inserted here -->
+    <!-- Habits List (Quests) -->
+    <div id="habits-list" class="space-y-8">
+      <!-- Habit RPG cards will be inserted here -->
     </div>
     <!-- Add/Edit Habit Modal -->
     <div id="habit-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md rpg-card">
         <div class="flex justify-between items-center mb-4">
-          <h3 class="text-xl font-semibold" id="modal-title">Add Habit</h3>
+          <h3 class="text-xl font-semibold" id="modal-title">New Quest</h3>
           <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
         </div>
         <form id="habit-form" class="space-y-4">
           <div>
-            <label class="block mb-1 text-sm font-medium" for="habit-name">Habit Name</label>
-            <input id="habit-name" type="text" required maxlength="40" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+            <label class="block mb-1 text-sm font-medium" for="habit-name">Quest Name</label>
+            <input id="habit-name" type="text" required maxlength="40" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
           </div>
           <div>
-            <label class="block mb-1 text-sm font-medium" for="habit-goal">Daily Goal (times)</label>
-            <input id="habit-goal" type="number" min="1" max="100" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+            <label class="block mb-1 text-sm font-medium" for="habit-goal">Target (per day)</label>
+            <input id="habit-goal" type="number" min="1" max="100" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
           </div>
           <div>
-            <label class="block mb-1 text-sm font-medium" for="habit-icon">Icon (FontAwesome, e.g. fa-water)</label>
-            <input id="habit-icon" type="text" maxlength="20" placeholder="fa-water" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+            <label class="block mb-1 text-sm font-medium" for="habit-type">Quest Type</label>
+            <select id="habit-type" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+              <option value="mind">🧠 Mind</option>
+              <option value="body">💪 Body</option>
+              <option value="social">🤝 Social</option>
+              <option value="other">✨ Other</option>
+            </select>
           </div>
-          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full">Save Habit</button>
+          <div>
+            <label class="block mb-1 text-sm font-medium" for="habit-icon">Icon (FontAwesome, e.g. fa-dumbbell, fa-book)</label>
+            <input id="habit-icon" type="text" maxlength="20" placeholder="fa-dumbbell" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+          </div>
+          <button type="submit" class="bg-gradient-to-r from-green-400 to-indigo-500 text-white px-4 py-2 rounded rpg-btn hover:scale-105 w-full">Save Quest</button>
         </form>
       </div>
     </div>
     <!-- Footer -->
-    <footer class="mt-16 text-center text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-6">
-      <p>Made with <span class="animate-beat text-red-500"><i class="fas fa-heart"></i></span> by <a href="https://github.com/untopo" class="text-blue-500 hover:underline">Topo</a></p>
-      <p class="mt-2 text-sm" id="local-time"></p>
+    <footer class="mt-16 text-center text-indigo-500 dark:text-indigo-200 border-t border-indigo-200 dark:border-indigo-700 pt-6">
+      <p>Embark on your journey • <span class="animate-beat text-yellow-400"><i class="fas fa-star"></i></span> by <a href="https://github.com/untopo" class="text-indigo-600 hover:underline">Topo</a></p>
+      <p class="mt-2 text-xs" id="local-time"></p>
     </footer>
+    <div id="confetti" class="confetti hidden"></div>
   </div>
   <script>
+    // RPG Level/XP System
+    let hero = JSON.parse(localStorage.getItem('rpg-hero')) || { xp: 0, level: 1 };
+    let habits = JSON.parse(localStorage.getItem('rpg-habits') || "[]");
+    const xpPerHabit = 10;
+    const baseXp = 50;
+    function xpToNext(level) {
+      // Simple RPG curve (could be more complex!)
+      return baseXp + (level-1)*25;
+    }
+    function updateHeroDisplay() {
+      document.getElementById('hero-level').textContent = hero.level;
+      document.getElementById('hero-xp').textContent = `${hero.xp}/${xpToNext(hero.level)}`;
+      let percent = Math.min(100, Math.round((hero.xp / xpToNext(hero.level))*100));
+      document.getElementById('xp-bar').style.width = percent + "%";
+    }
+    function gainXP(amount) {
+      hero.xp += amount;
+      let leveled = false;
+      while (hero.xp >= xpToNext(hero.level)) {
+        hero.xp -= xpToNext(hero.level);
+        hero.level += 1;
+        leveled = true;
+      }
+      localStorage.setItem('rpg-hero', JSON.stringify(hero));
+      updateHeroDisplay();
+      if (leveled) {
+        document.getElementById('levelup-badge').classList.remove('hidden');
+        document.querySelector('.rpg-avatar').classList.add('level-up');
+        // Optionally show confetti or animation!
+        setTimeout(()=>{
+          document.getElementById('levelup-badge').classList.add('hidden');
+          document.querySelector('.rpg-avatar').classList.remove('level-up');
+        }, 1800);
+      }
+    }
+    // Streaks: reset each day, streak is days you hit goal
+    function todayISO() { return new Date().toISOString().slice(0,10);}
+    function updateHabitProgress(idx, delta) {
+      let h = habits[idx];
+      if (!h.progress || h.lastDate !== todayISO()) {
+        h.progress = 0; h.lastDate = todayISO();
+      }
+      h.progress = Math.max(0, h.progress + delta);
+      if (h.progress === h.goal && !h.completedToday) {
+        // Completed! Combo++
+        h.streak = (h.streak || 0) + 1;
+        h.completedToday = true;
+        gainXP(xpPerHabit + 5 * h.streak); // reward streaks
+      } else if (h.progress < h.goal) {
+        h.completedToday = false;
+      }
+      localStorage.setItem('rpg-habits', JSON.stringify(habits));
+      renderHabits();
+    }
+    // Habits/Quests render
+    function renderHabits() {
+      const habitsList = document.getElementById('habits-list');
+      habitsList.innerHTML = "";
+      habits.forEach((habit, idx) => {
+        if (habit.lastDate !== todayISO()) { habit.progress = 0; habit.completedToday = false; }
+        const percent = Math.min(100, Math.round(((habit.progress||0) / habit.goal) * 100));
+        let typeColor = {
+          mind: "from-blue-200 to-blue-500 dark:from-blue-900 dark:to-blue-800",
+          body: "from-green-200 to-green-500 dark:from-green-900 dark:to-green-800",
+          social: "from-pink-200 to-pink-500 dark:from-pink-900 dark:to-pink-800",
+          other: "from-yellow-200 to-yellow-500 dark:from-yellow-900 dark:to-yellow-800"
+        }[habit.type] || "from-indigo-200 to-indigo-500";
+        habitsList.innerHTML += `
+        <div class="rpg-card bg-gradient-to-br ${typeColor} p-5 flex flex-col gap-2 md:flex-row items-center shadow-lg relative">
+          <div class="text-4xl mr-4"><i class="fas ${habit.icon || 'fa-seedling'}"></i></div>
+          <div class="flex-1">
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-lg">${habit.name}</span>
+              <span class="rpg-quest">${habit.type[0].toUpperCase() + habit.type.slice(1)}</span>
+            </div>
+            <div class="w-full bg-gradient-to-r from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full h-4 mt-2">
+              <div class="rpg-xp-bar h-4 rounded-full rpg-glow" style="width:${percent}%"></div>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+              <button class="bg-indigo-500 text-white px-2 py-1 rounded rpg-btn hover:bg-indigo-600" onclick="updateHabitProgress(${idx},1)"><i class="fas fa-plus"></i></button>
+              <button class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded rpg-btn hover:bg-gray-400 dark:hover:bg-gray-600" onclick="updateHabitProgress(${idx},-1)"><i class="fas fa-minus"></i></button>
+              <span class="ml-2 font-mono text-indigo-900 dark:text-indigo-200">${habit.progress||0} / ${habit.goal}</span>
+              <span class="ml-4 text-xs">Streak: <span class="font-bold text-yellow-600 dark:text-yellow-300">${habit.streak||0}</span> <i class="fas fa-fire text-orange-400 animate-beat"></i></span>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    // Modal controls
+    const habitModal = document.getElementById('habit-modal');
+    document.getElementById('add-habit-btn').onclick = () => {
+      habitModal.classList.remove('hidden');
+      document.getElementById('habit-form').reset();
+    };
+    document.getElementById('close-modal').onclick = () => habitModal.classList.add('hidden');
+    document.getElementById('habit-form').onsubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('habit-name').value;
+      const goal = parseInt(document.getElementById('habit-goal').value);
+      const icon = document.getElementById('habit-icon').value || "fa-star";
+      const type = document.getElementById('habit-type').value;
+      habits.push({ name, goal, icon, type, progress: 0, streak: 0, lastDate: todayISO(), completedToday: false });
+      localStorage.setItem('rpg-habits', JSON.stringify(habits));
+      habitModal.classList.add('hidden');
+      renderHabits();
+    };
     // Dark mode toggle
     const darkToggle = document.getElementById('dark-toggle');
     darkToggle.addEventListener('click', () => {
@@ -86,70 +243,16 @@
     if (localStorage.getItem('darkMode') === 'true') {
       document.documentElement.classList.add('dark');
     }
-
     // Show local time in footer
     const updateLocalTime = () => {
       document.getElementById('local-time').textContent = "Your local time: " + new Date().toLocaleString();
     };
     updateLocalTime(); setInterval(updateLocalTime, 60000);
-
-    // Modal controls
-    const habitModal = document.getElementById('habit-modal');
-    document.getElementById('add-habit-btn').onclick = () => {
-      habitModal.classList.remove('hidden');
-      document.getElementById('habit-form').reset();
-    };
-    document.getElementById('close-modal').onclick = () => habitModal.classList.add('hidden');
-
-    // Habit logic (minimal starter)
-    let habits = JSON.parse(localStorage.getItem('habits') || "[]");
-    const habitsList = document.getElementById('habits-list');
-    function renderHabits() {
-      habitsList.innerHTML = "";
-      habits.forEach((habit, i) => {
-        const progress = habit.progress || 0;
-        const percent = Math.min(100, Math.round((progress / habit.goal) * 100));
-        habitsList.innerHTML += `
-        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex flex-col md:flex-row items-center gap-4">
-          <div class="text-3xl text-green-500 dark:text-green-300"><i class="fas ${habit.icon || 'fa-seedling'}"></i></div>
-          <div class="flex-1">
-            <div class="flex justify-between items-center">
-              <span class="font-semibold text-lg">${habit.name}</span>
-              <span class="text-sm text-gray-500 dark:text-gray-400">Goal: ${habit.goal}</span>
-            </div>
-            <div class="w-full bg-green-200 dark:bg-green-900 rounded-full h-3 mt-2">
-              <div class="bg-green-500 rounded-full h-3 transition-all" style="width:${percent}%"></div>
-            </div>
-            <div class="flex items-center gap-2 mt-2">
-              <button class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600" onclick="incrementHabit(${i})"><i class="fas fa-plus"></i></button>
-              <button class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded hover:bg-gray-400 dark:hover:bg-gray-600" onclick="decrementHabit(${i})"><i class="fas fa-minus"></i></button>
-              <span class="ml-2 font-mono">${progress} / ${habit.goal}</span>
-            </div>
-          </div>
-        </div>`;
-      });
-    }
-    window.incrementHabit = (i) => {
-      habits[i].progress = (habits[i].progress || 0) + 1;
-      localStorage.setItem('habits', JSON.stringify(habits));
-      renderHabits();
-    };
-    window.decrementHabit = (i) => {
-      habits[i].progress = Math.max(0, (habits[i].progress || 0) - 1);
-      localStorage.setItem('habits', JSON.stringify(habits));
-      renderHabits();
-    };
-    document.getElementById('habit-form').onsubmit = function(e) {
-      e.preventDefault();
-      const name = document.getElementById('habit-name').value;
-      const goal = parseInt(document.getElementById('habit-goal').value);
-      const icon = document.getElementById('habit-icon').value || "fa-seedling";
-      habits.push({ name, goal, icon, progress: 0, streak: 0 });
-      localStorage.setItem('habits', JSON.stringify(habits));
-      habitModal.classList.add('hidden');
-      renderHabits();
-    };
+    // On load
+    updateHeroDisplay();
     renderHabits();
+    // Expose for onclick
+    window.updateHabitProgress = updateHabitProgress;
   </script>
 </body>
 </html>
