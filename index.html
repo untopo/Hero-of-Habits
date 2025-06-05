@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en" class="">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Incremental Habit Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      25%, 60% { transform: scale(1.1); }
+      40% { transform: scale(1); }
+    }
+    .animate-beat { animation: heartbeat 1s infinite; display: inline-block; }
+    @keyframes gradient {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .animate-gradient {
+      background-size: 200% auto;
+      animation: gradient 4s linear infinite;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 transition-colors min-h-screen">
+  <div class="container mx-auto px-4 py-8 max-w-3xl">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-green-500 to-blue-500 bg-clip-text text-transparent animate-gradient">
+        Habit Incremental
+      </h1>
+      <button id="dark-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition">
+        <i class="fas fa-moon text-gray-600 block dark:hidden"></i>
+        <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
+      </button>
+    </div>
+    <!-- Add Habit Button -->
+    <div class="flex justify-end mb-4">
+      <button id="add-habit-btn" class="bg-green-500 text-white px-4 py-2 rounded-full flex items-center gap-2 hover:bg-green-600 shadow">
+        <i class="fas fa-plus"></i> Add Habit
+      </button>
+    </div>
+    <!-- Habits List -->
+    <div id="habits-list" class="space-y-6">
+      <!-- Habit cards will be inserted here -->
+    </div>
+    <!-- Add/Edit Habit Modal -->
+    <div id="habit-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-xl font-semibold" id="modal-title">Add Habit</h3>
+          <button id="close-modal" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+        </div>
+        <form id="habit-form" class="space-y-4">
+          <div>
+            <label class="block mb-1 text-sm font-medium" for="habit-name">Habit Name</label>
+            <input id="habit-name" type="text" required maxlength="40" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+          </div>
+          <div>
+            <label class="block mb-1 text-sm font-medium" for="habit-goal">Daily Goal (times)</label>
+            <input id="habit-goal" type="number" min="1" max="100" required class="w-full px-3 py-2 border rounded focus:outline-none focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+          </div>
+          <div>
+            <label class="block mb-1 text-sm font-medium" for="habit-icon">Icon (FontAwesome, e.g. fa-water)</label>
+            <input id="habit-icon" type="text" maxlength="20" placeholder="fa-water" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+          </div>
+          <button type="submit" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 w-full">Save Habit</button>
+        </form>
+      </div>
+    </div>
+    <!-- Footer -->
+    <footer class="mt-16 text-center text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-6">
+      <p>Made with <span class="animate-beat text-red-500"><i class="fas fa-heart"></i></span> by <a href="https://github.com/untopo" class="text-blue-500 hover:underline">Topo</a></p>
+      <p class="mt-2 text-sm" id="local-time"></p>
+    </footer>
+  </div>
+  <script>
+    // Dark mode toggle
+    const darkToggle = document.getElementById('dark-toggle');
+    darkToggle.addEventListener('click', () => {
+      document.documentElement.classList.toggle('dark');
+      localStorage.setItem('darkMode', document.documentElement.classList.contains('dark'));
+    });
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.documentElement.classList.add('dark');
+    }
+
+    // Show local time in footer
+    const updateLocalTime = () => {
+      document.getElementById('local-time').textContent = "Your local time: " + new Date().toLocaleString();
+    };
+    updateLocalTime(); setInterval(updateLocalTime, 60000);
+
+    // Modal controls
+    const habitModal = document.getElementById('habit-modal');
+    document.getElementById('add-habit-btn').onclick = () => {
+      habitModal.classList.remove('hidden');
+      document.getElementById('habit-form').reset();
+    };
+    document.getElementById('close-modal').onclick = () => habitModal.classList.add('hidden');
+
+    // Habit logic (minimal starter)
+    let habits = JSON.parse(localStorage.getItem('habits') || "[]");
+    const habitsList = document.getElementById('habits-list');
+    function renderHabits() {
+      habitsList.innerHTML = "";
+      habits.forEach((habit, i) => {
+        const progress = habit.progress || 0;
+        const percent = Math.min(100, Math.round((progress / habit.goal) * 100));
+        habitsList.innerHTML += `
+        <div class="bg-white dark:bg-gray-800 rounded-xl shadow p-5 flex flex-col md:flex-row items-center gap-4">
+          <div class="text-3xl text-green-500 dark:text-green-300"><i class="fas ${habit.icon || 'fa-seedling'}"></i></div>
+          <div class="flex-1">
+            <div class="flex justify-between items-center">
+              <span class="font-semibold text-lg">${habit.name}</span>
+              <span class="text-sm text-gray-500 dark:text-gray-400">Goal: ${habit.goal}</span>
+            </div>
+            <div class="w-full bg-green-200 dark:bg-green-900 rounded-full h-3 mt-2">
+              <div class="bg-green-500 rounded-full h-3 transition-all" style="width:${percent}%"></div>
+            </div>
+            <div class="flex items-center gap-2 mt-2">
+              <button class="bg-green-500 text-white px-2 py-1 rounded hover:bg-green-600" onclick="incrementHabit(${i})"><i class="fas fa-plus"></i></button>
+              <button class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded hover:bg-gray-400 dark:hover:bg-gray-600" onclick="decrementHabit(${i})"><i class="fas fa-minus"></i></button>
+              <span class="ml-2 font-mono">${progress} / ${habit.goal}</span>
+            </div>
+          </div>
+        </div>`;
+      });
+    }
+    window.incrementHabit = (i) => {
+      habits[i].progress = (habits[i].progress || 0) + 1;
+      localStorage.setItem('habits', JSON.stringify(habits));
+      renderHabits();
+    };
+    window.decrementHabit = (i) => {
+      habits[i].progress = Math.max(0, (habits[i].progress || 0) - 1);
+      localStorage.setItem('habits', JSON.stringify(habits));
+      renderHabits();
+    };
+    document.getElementById('habit-form').onsubmit = function(e) {
+      e.preventDefault();
+      const name = document.getElementById('habit-name').value;
+      const goal = parseInt(document.getElementById('habit-goal').value);
+      const icon = document.getElementById('habit-icon').value || "fa-seedling";
+      habits.push({ name, goal, icon, progress: 0, streak: 0 });
+      localStorage.setItem('habits', JSON.stringify(habits));
+      habitModal.classList.add('hidden');
+      renderHabits();
+    };
+    renderHabits();
+  </script>
+</body>
+</html>
