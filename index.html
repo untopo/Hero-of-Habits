@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RPG Habit Tracker</title>
+  <title>Hero of Habits - RPG Tracker</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
@@ -25,7 +25,7 @@
     }
     .rpg-avatar {
       width: 80px; height: 80px; background: #6366f1; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-      box-shadow: 0 0 12px #7c3aed77;
+      box-shadow: 0 0 12px #7c3aed77; position: relative;
     }
     .rpg-quest {
       background: linear-gradient(90deg, #fbbf24 40%, #f472b6 100%);
@@ -36,17 +36,44 @@
       font-size: 0.85rem;
       margin-left: 0.5rem;
     }
-    /* RPG button borders */
     .rpg-btn {
       border: 2px solid #a78bfa;
       box-shadow: 0 1px 4px #a78bfa22;
     }
-    /* Add confetti animation for level up (hook only) */
     .confetti {
       pointer-events: none;
       position: fixed;
-      left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1001; 
-      /* confetti JS or CSS animation will go here */
+      left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1001;
+      pointer-events: none;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: flex-start;
+      overflow: hidden;
+    }
+    .confetti-piece {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      opacity: 0.8;
+      position: absolute;
+      will-change: transform, opacity;
+      animation: confetti-fall 1.2s linear forwards;
+    }
+    @keyframes confetti-fall {
+      0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1;}
+      80% { opacity: 1;}
+      100% { transform: translateY(600px) rotate(360deg) scale(0.8); opacity: 0;}
+    }
+    /* Sidebar styles */
+    #inventory-sidebar {
+      transition: right 0.4s cubic-bezier(0.4,0,0.2,1);
+    }
+    #inventory-sidebar.closed {
+      right: -380px;
+    }
+    #inventory-sidebar.open {
+      right: 0;
     }
   </style>
 </head>
@@ -55,9 +82,10 @@
     <!-- RPG Header -->
     <div class="flex justify-between items-center mb-8">
       <div class="flex items-center gap-4">
-        <div class="rpg-avatar">
-          <i class="fas fa-hat-wizard text-4xl text-white"></i>
-          <!-- Replace with avatar builder or RPG sprite -->
+        <div id="rpg-avatar" class="rpg-avatar relative">
+          <i id="avatar-base" class="fas fa-hat-wizard text-5xl text-white"></i>
+          <span id="avatar-hat" class="absolute -top-3 left-1/2 -translate-x-1/2"></span>
+          <span id="avatar-weapon" class="absolute bottom-0 right-2"></span>
         </div>
         <div>
           <h1 class="text-2xl md:text-3xl font-bold text-indigo-700 dark:text-indigo-300 rpg-font">Hero of Habits</h1>
@@ -72,10 +100,20 @@
           </div>
         </div>
       </div>
-      <button id="dark-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition">
-        <i class="fas fa-moon text-gray-600 block dark:hidden"></i>
-        <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
-      </button>
+      <div class="flex flex-col gap-2 items-end">
+        <button id="open-inventory" class="px-3 py-1 rounded bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-300 font-bold text-xs rpg-btn flex items-center gap-2">
+          <i class="fas fa-backpack"></i> Inventory
+        </button>
+        <button id="dark-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition">
+          <i class="fas fa-moon text-gray-600 block dark:hidden"></i>
+          <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
+        </button>
+      </div>
+    </div>
+    <!-- Daily Quests Title -->
+    <div class="flex items-center mb-3 gap-2">
+      <i class="fas fa-scroll text-yellow-500"></i>
+      <span class="text-lg font-bold text-indigo-700 dark:text-indigo-300">Daily Quests</span>
     </div>
     <!-- Add Habit Button -->
     <div class="flex justify-end mb-4">
@@ -120,23 +158,128 @@
         </form>
       </div>
     </div>
+    <!-- Inventory Sidebar (Achievements & Items) -->
+    <div id="inventory-sidebar" class="fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-900 shadow-xl rpg-card closed z-40 flex flex-col pt-8 pb-4 px-6">
+      <div class="flex justify-between items-center mb-4">
+        <div class="text-lg font-bold text-indigo-700 dark:text-indigo-300"><i class="fas fa-backpack"></i> Inventory</div>
+        <button id="close-inventory" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+      </div>
+      <div>
+        <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-300 mb-2"><i class="fas fa-medal"></i> Achievements</div>
+        <div id="achievements" class="flex flex-wrap gap-2 mb-4">
+          <!-- Achievement badges appear here -->
+        </div>
+        <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-300 mb-2"><i class="fas fa-gem"></i> Items</div>
+        <div id="items" class="flex flex-wrap gap-2">
+          <!-- Item icons appear here -->
+        </div>
+      </div>
+    </div>
+    <!-- Confetti -->
+    <div id="confetti" class="confetti hidden"></div>
     <!-- Footer -->
     <footer class="mt-16 text-center text-indigo-500 dark:text-indigo-200 border-t border-indigo-200 dark:border-indigo-700 pt-6">
       <p>Embark on your journey • <span class="animate-beat text-yellow-400"><i class="fas fa-star"></i></span> by <a href="https://github.com/untopo" class="text-indigo-600 hover:underline">Topo</a></p>
       <p class="mt-2 text-xs" id="local-time"></p>
     </footer>
-    <div id="confetti" class="confetti hidden"></div>
   </div>
   <script>
-    // RPG Level/XP System
-    let hero = JSON.parse(localStorage.getItem('rpg-hero')) || { xp: 0, level: 1 };
+    // --- RPG/XP/Inventory logic ---
+    let hero = JSON.parse(localStorage.getItem('rpg-hero')) || { xp: 0, level: 1, items: [], achievements: [] };
     let habits = JSON.parse(localStorage.getItem('rpg-habits') || "[]");
     const xpPerHabit = 10;
     const baseXp = 50;
-    function xpToNext(level) {
-      // Simple RPG curve (could be more complex!)
-      return baseXp + (level-1)*25;
+    function xpToNext(level) { return baseXp + (level-1)*25; }
+    function todayISO() { return new Date().toISOString().slice(0,10); }
+    let editingHabit = null;
+
+    // Confetti: simple burst
+    function showConfetti() {
+      const confetti = document.getElementById('confetti');
+      confetti.innerHTML = "";
+      confetti.classList.remove('hidden');
+      const colors = ['#4ade80', '#6366f1', '#7c3aed', '#fbbf24', '#f472b6', '#f87171', '#facc15'];
+      for (let i=0; i<32; i++) {
+        let el = document.createElement('div');
+        el.className = "confetti-piece";
+        el.style.background = colors[Math.floor(Math.random()*colors.length)];
+        el.style.left = (5 + Math.random()*90) + "vw";
+        el.style.top = (Math.random()*10) + "vh";
+        el.style.transform = `rotate(${Math.random()*360}deg)`;
+        confetti.appendChild(el);
+      }
+      setTimeout(()=>{ confetti.classList.add('hidden'); }, 1300);
     }
+
+    // Inventory helpers
+    function unlockItem(item) {
+      if (!hero.items.includes(item)) {
+        hero.items.push(item);
+        localStorage.setItem('rpg-hero', JSON.stringify(hero));
+      }
+    }
+    function unlockAchievement(name) {
+      if (!hero.achievements.includes(name)) {
+        hero.achievements.push(name);
+        localStorage.setItem('rpg-hero', JSON.stringify(hero));
+      }
+    }
+    function renderInventory() {
+      // Achievements
+      const ach = document.getElementById('achievements');
+      ach.innerHTML = "";
+      let allAchievements = [
+        { name: "First Quest", icon: "fa-medal", condition: () => habits.length > 0 },
+        { name: "Level 5", icon: "fa-trophy", condition: () => hero.level >= 5 },
+        { name: "Streak 7", icon: "fa-fire", condition: () => habits.some(h=>h.streak>=7) },
+        { name: "Perfection", icon: "fa-gem", condition: () => habits.every(h=>h.streak>=3 && h.streak!==0 && h.progress===h.goal) && habits.length>0 }
+      ];
+      allAchievements.forEach(a => {
+        let unlocked = a.condition();
+        if (unlocked) unlockAchievement(a.name);
+        ach.innerHTML += `<span class="inline-flex items-center px-2 py-1 bg-yellow-200 dark:bg-yellow-700 text-yellow-900 dark:text-yellow-100 rounded rpg-btn text-xs ${hero.achievements.includes(a.name)?'':'opacity-50'}" title="${a.name}">
+          <i class="fas ${a.icon} mr-1"></i>${a.name}
+        </span>`;
+      });
+      // Items (cosmetics)
+      const items = document.getElementById('items');
+      items.innerHTML = "";
+      let allItems = [
+        { name: "Wizard Hat", icon: "fa-hat-wizard", condition: () => hero.level>=2, slot:"hat" },
+        { name: "Sword", icon: "fa-sword", condition: () => hero.level>=4, slot:"weapon" },
+        { name: "Crown", icon: "fa-crown", condition: () => hero.level>=10, slot:"hat" }
+      ];
+      allItems.forEach(i=>{
+        let unlocked = i.condition();
+        if (unlocked) unlockItem(i.name);
+        items.innerHTML += `<span class="inline-flex items-center px-2 py-1 bg-indigo-200 dark:bg-indigo-700 text-indigo-900 dark:text-indigo-100 rounded rpg-btn text-xs cursor-pointer ${hero.items.includes(i.name)?'':'opacity-40'}"
+          onclick="equipItem('${i.name}')"
+          title="${i.name}">
+          <i class="fas ${i.icon}"></i>
+        </span>`;
+      });
+    }
+    // Cosmetic equipment logic
+    let equipped = JSON.parse(localStorage.getItem('rpg-equipped') || "{}");
+    function renderAvatar() {
+      // base
+      let base = equipped.hat==="Crown" ? "fa-crown" : "fa-hat-wizard";
+      document.getElementById('avatar-base').className = `fas ${base} text-5xl text-white`;
+      // hat slot
+      document.getElementById('avatar-hat').innerHTML = (equipped.hat==="Crown") ? `<i class="fas fa-crown text-yellow-400 text-2xl"></i>` : "";
+      // weapon
+      document.getElementById('avatar-weapon').innerHTML = (equipped.weapon==="Sword") ? `<i class="fas fa-sword text-gray-200 text-xl"></i>` : "";
+    }
+    window.equipItem = function(itemName) {
+      if (!hero.items.includes(itemName)) return;
+      // Simple: assign by name
+      if (itemName==="Wizard Hat"||itemName==="Crown") equipped.hat = itemName;
+      if (itemName==="Sword") equipped.weapon = itemName;
+      localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+      renderAvatar();
+    };
+
+    // Level/XP
     function updateHeroDisplay() {
       document.getElementById('hero-level').textContent = hero.level;
       document.getElementById('hero-xp').textContent = `${hero.xp}/${xpToNext(hero.level)}`;
@@ -156,15 +299,16 @@
       if (leveled) {
         document.getElementById('levelup-badge').classList.remove('hidden');
         document.querySelector('.rpg-avatar').classList.add('level-up');
-        // Optionally show confetti or animation!
+        showConfetti();
         setTimeout(()=>{
           document.getElementById('levelup-badge').classList.add('hidden');
           document.querySelector('.rpg-avatar').classList.remove('level-up');
         }, 1800);
       }
+      renderInventory();
     }
-    // Streaks: reset each day, streak is days you hit goal
-    function todayISO() { return new Date().toISOString().slice(0,10);}
+
+    // Habits/Quests
     function updateHabitProgress(idx, delta) {
       let h = habits[idx];
       if (!h.progress || h.lastDate !== todayISO()) {
@@ -172,22 +316,21 @@
       }
       h.progress = Math.max(0, h.progress + delta);
       if (h.progress === h.goal && !h.completedToday) {
-        // Completed! Combo++
         h.streak = (h.streak || 0) + 1;
         h.completedToday = true;
-        gainXP(xpPerHabit + 5 * h.streak); // reward streaks
+        gainXP(xpPerHabit + 5 * h.streak);
       } else if (h.progress < h.goal) {
         h.completedToday = false;
       }
       localStorage.setItem('rpg-habits', JSON.stringify(habits));
       renderHabits();
+      renderInventory();
     }
-    // Habits/Quests render
     function renderHabits() {
       const habitsList = document.getElementById('habits-list');
       habitsList.innerHTML = "";
       habits.forEach((habit, idx) => {
-        if (habit.lastDate !== todayISO()) { habit.progress = 0; habit.completedToday = false; }
+        if (habit.lastDate !== todayISO()) { habit.progress = 0; habit.completedToday = false; habit.lastDate=todayISO();}
         const percent = Math.min(100, Math.round(((habit.progress||0) / habit.goal) * 100));
         let typeColor = {
           mind: "from-blue-200 to-blue-500 dark:from-blue-900 dark:to-blue-800",
@@ -211,16 +354,45 @@
               <button class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded rpg-btn hover:bg-gray-400 dark:hover:bg-gray-600" onclick="updateHabitProgress(${idx},-1)"><i class="fas fa-minus"></i></button>
               <span class="ml-2 font-mono text-indigo-900 dark:text-indigo-200">${habit.progress||0} / ${habit.goal}</span>
               <span class="ml-4 text-xs">Streak: <span class="font-bold text-yellow-600 dark:text-yellow-300">${habit.streak||0}</span> <i class="fas fa-fire text-orange-400 animate-beat"></i></span>
+              <button class="ml-4 text-xs text-yellow-600 dark:text-yellow-300 hover:underline" onclick="editHabit(${idx})" title="Edit Quest">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button class="ml-2 text-xs text-red-500 hover:underline" onclick="deleteHabit(${idx})" title="Delete Quest">
+                <i class="fas fa-trash"></i>
+              </button>
             </div>
+            ${habit.completedToday ? `<span class="inline-block mt-2 text-green-700 dark:text-green-300 font-bold text-xs"><i class="fas fa-check-circle"></i> Completed!</span>` : ""}
           </div>
         </div>`;
       });
     }
+    window.updateHabitProgress = updateHabitProgress;
+    window.editHabit = function(idx) {
+      const habit = habits[idx];
+      document.getElementById('habit-name').value = habit.name;
+      document.getElementById('habit-goal').value = habit.goal;
+      document.getElementById('habit-type').value = habit.type;
+      document.getElementById('habit-icon').value = habit.icon;
+      habitModal.classList.remove('hidden');
+      document.getElementById('modal-title').textContent = "Edit Quest";
+      editingHabit = idx;
+    };
+    window.deleteHabit = function(idx) {
+      if (confirm("Delete this quest? This cannot be undone.")) {
+        habits.splice(idx, 1);
+        localStorage.setItem('rpg-habits', JSON.stringify(habits));
+        renderHabits();
+        renderInventory();
+      }
+    };
+
     // Modal controls
     const habitModal = document.getElementById('habit-modal');
     document.getElementById('add-habit-btn').onclick = () => {
+      editingHabit = null;
       habitModal.classList.remove('hidden');
       document.getElementById('habit-form').reset();
+      document.getElementById('modal-title').textContent = "New Quest";
     };
     document.getElementById('close-modal').onclick = () => habitModal.classList.add('hidden');
     document.getElementById('habit-form').onsubmit = function(e) {
@@ -229,11 +401,32 @@
       const goal = parseInt(document.getElementById('habit-goal').value);
       const icon = document.getElementById('habit-icon').value || "fa-star";
       const type = document.getElementById('habit-type').value;
-      habits.push({ name, goal, icon, type, progress: 0, streak: 0, lastDate: todayISO(), completedToday: false });
+      if (editingHabit !== null) {
+        habits[editingHabit] = { name, goal, icon, type, progress: 0, streak: habits[editingHabit].streak||0, lastDate: todayISO(), completedToday: false };
+        editingHabit = null;
+      } else {
+        habits.push({ name, goal, icon, type, progress: 0, streak: 0, lastDate: todayISO(), completedToday: false });
+      }
       localStorage.setItem('rpg-habits', JSON.stringify(habits));
       habitModal.classList.add('hidden');
       renderHabits();
+      renderInventory();
     };
+
+    // Inventory sidebar controls
+    const inventorySidebar = document.getElementById('inventory-sidebar');
+    document.getElementById('open-inventory').onclick = () => {
+      renderInventory();
+      inventorySidebar.classList.remove('closed');
+      inventorySidebar.classList.add('open');
+    };
+    document.getElementById('close-inventory').onclick = () => {
+      inventorySidebar.classList.remove('open');
+      inventorySidebar.classList.add('closed');
+    };
+    // Hide sidebar initially
+    inventorySidebar.classList.add('closed');
+
     // Dark mode toggle
     const darkToggle = document.getElementById('dark-toggle');
     darkToggle.addEventListener('click', () => {
@@ -243,16 +436,18 @@
     if (localStorage.getItem('darkMode') === 'true') {
       document.documentElement.classList.add('dark');
     }
+
     // Show local time in footer
     const updateLocalTime = () => {
       document.getElementById('local-time').textContent = "Your local time: " + new Date().toLocaleString();
     };
     updateLocalTime(); setInterval(updateLocalTime, 60000);
+
     // On load
     updateHeroDisplay();
     renderHabits();
-    // Expose for onclick
-    window.updateHabitProgress = updateHabitProgress;
+    renderInventory();
+    renderAvatar();
   </script>
 </body>
 </html>
