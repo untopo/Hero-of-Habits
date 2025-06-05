@@ -13,7 +13,7 @@
     .rpg-glow { box-shadow: 0 0 20px 4px #3b82f6cc, 0 0 0 2px #a78bfa; }
     .level-up { animation: levelup-pop 0.8s; }
     @keyframes levelup-pop {
-      0% { transform: scale(1); }
+      0% { transform: scale(1);}
       20% { transform: scale(1.2) rotate(-2deg);}
       60% { transform: scale(1.1);}
       100% { transform: scale(1);}
@@ -44,7 +44,6 @@
       pointer-events: none;
       position: fixed;
       left: 0; top: 0; width: 100vw; height: 100vh; z-index: 1001;
-      pointer-events: none;
       display: flex;
       flex-wrap: wrap;
       justify-content: center;
@@ -65,7 +64,6 @@
       80% { opacity: 1;}
       100% { transform: translateY(600px) rotate(360deg) scale(0.8); opacity: 0;}
     }
-    /* Sidebar styles */
     #inventory-sidebar {
       transition: right 0.4s cubic-bezier(0.4,0,0.2,1);
     }
@@ -75,6 +73,18 @@
     #inventory-sidebar.open {
       right: 0;
     }
+    /* Quest Log Modal */
+    #questlog-modal { transition: opacity 0.3s; }
+    #questlog-modal.hidden { opacity: 0; pointer-events: none; }
+    #questlog-modal.visible { opacity: 1; }
+    .pixel-avatar {
+      width: 64px; height: 64px;
+      image-rendering: pixelated;
+      border-radius: 10px;
+      border: 2px solid #6366f1;
+      background: #fff;
+      margin: auto;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-purple-100 to-indigo-200 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900 text-gray-900 dark:text-gray-100 transition-colors min-h-screen rpg-font">
@@ -83,8 +93,8 @@
     <div class="flex justify-between items-center mb-8">
       <div class="flex items-center gap-4">
         <div id="rpg-avatar" class="rpg-avatar relative">
-          <i id="avatar-base" class="fas fa-hat-wizard text-5xl text-white"></i>
-          <span id="avatar-hat" class="absolute -top-3 left-1/2 -translate-x-1/2"></span>
+          <img id="pixel-avatar" class="pixel-avatar" src="https://raw.githubusercontent.com/untopo/otpo-assets/main/pixel-hero.png" alt="Avatar">
+          <span id="avatar-hat" class="absolute -top-4 left-1/2 -translate-x-1/2"></span>
           <span id="avatar-weapon" class="absolute bottom-0 right-2"></span>
         </div>
         <div>
@@ -101,9 +111,14 @@
         </div>
       </div>
       <div class="flex flex-col gap-2 items-end">
-        <button id="open-inventory" class="px-3 py-1 rounded bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-300 font-bold text-xs rpg-btn flex items-center gap-2">
-          <i class="fas fa-backpack"></i> Inventory
-        </button>
+        <div class="flex gap-2">
+          <button id="open-inventory" class="px-3 py-1 rounded bg-indigo-200 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-300 font-bold text-xs rpg-btn flex items-center gap-2">
+            <i class="fas fa-backpack"></i> Inventory
+          </button>
+          <button id="open-questlog" class="px-3 py-1 rounded bg-yellow-200 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 font-bold text-xs rpg-btn flex items-center gap-2">
+            <i class="fas fa-scroll"></i> Quest Log
+          </button>
+        </div>
         <button id="dark-toggle" class="w-10 h-10 flex items-center justify-center rounded-full bg-indigo-100 dark:bg-indigo-800 hover:bg-indigo-200 dark:hover:bg-indigo-700 transition">
           <i class="fas fa-moon text-gray-600 block dark:hidden"></i>
           <i class="fas fa-sun hidden dark:block text-yellow-300"></i>
@@ -151,8 +166,10 @@
             </select>
           </div>
           <div>
-            <label class="block mb-1 text-sm font-medium" for="habit-icon">Icon (FontAwesome, e.g. fa-dumbbell, fa-book)</label>
-            <input id="habit-icon" type="text" maxlength="20" placeholder="fa-dumbbell" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+            <label class="block mb-1 text-sm font-medium" for="habit-icon">Icon</label>
+            <input type="hidden" id="habit-icon" name="habit-icon">
+            <div id="icon-picker" class="grid grid-cols-5 gap-2 max-h-40 overflow-y-auto border rounded p-2 bg-gray-100 dark:bg-gray-700"></div>
+            <div class="text-xs mt-1 text-gray-500 dark:text-gray-300">Click to select an icon</div>
           </div>
           <button type="submit" class="bg-gradient-to-r from-green-400 to-indigo-500 text-white px-4 py-2 rounded rpg-btn hover:scale-105 w-full">Save Quest</button>
         </form>
@@ -166,12 +183,20 @@
       </div>
       <div>
         <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-300 mb-2"><i class="fas fa-medal"></i> Achievements</div>
-        <div id="achievements" class="flex flex-wrap gap-2 mb-4">
-          <!-- Achievement badges appear here -->
-        </div>
+        <div id="achievements" class="flex flex-wrap gap-2 mb-4"></div>
         <div class="text-sm font-semibold text-indigo-600 dark:text-indigo-300 mb-2"><i class="fas fa-gem"></i> Items</div>
-        <div id="items" class="flex flex-wrap gap-2">
-          <!-- Item icons appear here -->
+        <div id="items" class="flex flex-wrap gap-2"></div>
+      </div>
+    </div>
+    <!-- Quest Log Modal -->
+    <div id="questlog-modal" class="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 hidden">
+      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-2xl rpg-card">
+        <div class="flex justify-between items-center mb-4">
+          <div class="text-xl font-semibold"><i class="fas fa-scroll"></i> Quest Log History</div>
+          <button id="close-questlog" class="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="questlog-content" class="max-h-96 overflow-y-auto">
+          <!-- Quest log events will appear here -->
         </div>
       </div>
     </div>
@@ -183,10 +208,37 @@
       <p class="mt-2 text-xs" id="local-time"></p>
     </footer>
   </div>
+  <audio id="audio-levelup" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12a8b4e8c5.mp3" preload="auto"></audio>
+  <audio id="audio-quest" src="https://cdn.pixabay.com/audio/2022/10/16/audio_128b07b7f2.mp3" preload="auto"></audio>
   <script>
-    // --- RPG/XP/Inventory logic ---
+    // --- Icon Picker ---
+    const questIcons = [
+      "fa-dumbbell", "fa-book", "fa-mug-hot", "fa-bolt", "fa-seedling", "fa-water",
+      "fa-brain", "fa-running", "fa-mountain", "fa-paw", "fa-heart", "fa-music",
+      "fa-leaf", "fa-medal", "fa-star", "fa-fire", "fa-code", "fa-apple-alt",
+      "fa-bed", "fa-bicycle", "fa-broom", "fa-chess", "fa-gamepad", "fa-fish", "fa-peace",
+      "fa-shield-alt", "fa-dog", "fa-cat", "fa-campground", "fa-tree", "fa-rocket"
+    ];
+    function renderIconPicker(selectedIcon) {
+      const picker = document.getElementById('icon-picker');
+      picker.innerHTML = '';
+      questIcons.forEach(icon => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = `p-2 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition
+          ${selectedIcon === icon ? 'bg-indigo-300 dark:bg-indigo-700 ring-2 ring-indigo-500' : ''}`;
+        btn.innerHTML = `<i class="fas ${icon} text-2xl"></i>`;
+        btn.onclick = () => {
+          document.getElementById('habit-icon').value = icon;
+          renderIconPicker(icon);
+        };
+        picker.appendChild(btn);
+      });
+    }
+    // --- RPG logic and data ---
     let hero = JSON.parse(localStorage.getItem('rpg-hero')) || { xp: 0, level: 1, items: [], achievements: [] };
     let habits = JSON.parse(localStorage.getItem('rpg-habits') || "[]");
+    let questLog = JSON.parse(localStorage.getItem('rpg-questlog') || "[]");
     const xpPerHabit = 10;
     const baseXp = 50;
     function xpToNext(level) { return baseXp + (level-1)*25; }
@@ -210,7 +262,14 @@
       }
       setTimeout(()=>{ confetti.classList.add('hidden'); }, 1300);
     }
-
+    // Play sound
+    function playSound(id) {
+      try {
+        const el = document.getElementById(id);
+        el.currentTime = 0;
+        el.play();
+      } catch(e){}
+    }
     // Inventory helpers
     function unlockItem(item) {
       if (!hero.items.includes(item)) {
@@ -232,7 +291,9 @@
         { name: "First Quest", icon: "fa-medal", condition: () => habits.length > 0 },
         { name: "Level 5", icon: "fa-trophy", condition: () => hero.level >= 5 },
         { name: "Streak 7", icon: "fa-fire", condition: () => habits.some(h=>h.streak>=7) },
-        { name: "Perfection", icon: "fa-gem", condition: () => habits.every(h=>h.streak>=3 && h.streak!==0 && h.progress===h.goal) && habits.length>0 }
+        { name: "Perfection", icon: "fa-gem", condition: () => habits.every(h=>h.streak>=3 && h.streak!==0 && h.progress===h.goal) && habits.length>0 },
+        { name: "Quest Master", icon: "fa-scroll", condition: () => questLog.length >= 30 },
+        { name: "Night Owl", icon: "fa-moon", condition: () => { let h=new Date(); return h.getHours()>=23||h.getHours()<4; } }
       ];
       allAchievements.forEach(a => {
         let unlocked = a.condition();
@@ -247,7 +308,11 @@
       let allItems = [
         { name: "Wizard Hat", icon: "fa-hat-wizard", condition: () => hero.level>=2, slot:"hat" },
         { name: "Sword", icon: "fa-sword", condition: () => hero.level>=4, slot:"weapon" },
-        { name: "Crown", icon: "fa-crown", condition: () => hero.level>=10, slot:"hat" }
+        { name: "Crown", icon: "fa-crown", condition: () => hero.level>=10, slot:"hat" },
+        { name: "Shield", icon: "fa-shield-alt", condition: () => hero.level>=7, slot:"shield" },
+        { name: "Dog Pet", icon: "fa-dog", condition: () => habits.some(h=>h.streak>=14), slot:"pet" },
+        { name: "Cat Pet", icon: "fa-cat", condition: () => hero.achievements.includes("Night Owl"), slot:"pet" },
+        { name: "Forest BG", icon: "fa-tree", condition: () => hero.level>=8, slot:"background" }
       ];
       allItems.forEach(i=>{
         let unlocked = i.condition();
@@ -262,19 +327,30 @@
     // Cosmetic equipment logic
     let equipped = JSON.parse(localStorage.getItem('rpg-equipped') || "{}");
     function renderAvatar() {
-      // base
-      let base = equipped.hat==="Crown" ? "fa-crown" : "fa-hat-wizard";
-      document.getElementById('avatar-base').className = `fas ${base} text-5xl text-white`;
-      // hat slot
-      document.getElementById('avatar-hat').innerHTML = (equipped.hat==="Crown") ? `<i class="fas fa-crown text-yellow-400 text-2xl"></i>` : "";
-      // weapon
-      document.getElementById('avatar-weapon').innerHTML = (equipped.weapon==="Sword") ? `<i class="fas fa-sword text-gray-200 text-xl"></i>` : "";
+      // base pixel avatar (change background if equipped)
+      let bg = (equipped.background==="Forest BG") ?
+        "url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?fit=crop&w=100&q=30')" :
+        "";
+      document.getElementById("pixel-avatar").style.backgroundImage = bg ? `url('${bg}')` : "";
+      // hat
+      let hat = "";
+      if (equipped.hat==="Crown") hat = `<i class="fas fa-crown text-yellow-400 text-2xl"></i>`;
+      else if (equipped.hat==="Wizard Hat") hat = `<i class="fas fa-hat-wizard text-purple-500 text-2xl"></i>`;
+      document.getElementById('avatar-hat').innerHTML = hat;
+      // weapon/shield/pet
+      document.getElementById('avatar-weapon').innerHTML =
+        (equipped.weapon==="Sword" ? `<i class="fas fa-sword text-gray-200 text-xl"></i>` : "") +
+        (equipped.shield==="Shield" ? `<i class="fas fa-shield-alt text-blue-400 text-lg ml-2"></i>` : "") +
+        (equipped.pet==="Dog Pet" ? `<i class="fas fa-dog text-yellow-700 text-lg ml-2"></i>` : "") +
+        (equipped.pet==="Cat Pet" ? `<i class="fas fa-cat text-pink-400 text-lg ml-2"></i>` : "");
     }
     window.equipItem = function(itemName) {
       if (!hero.items.includes(itemName)) return;
-      // Simple: assign by name
       if (itemName==="Wizard Hat"||itemName==="Crown") equipped.hat = itemName;
       if (itemName==="Sword") equipped.weapon = itemName;
+      if (itemName==="Shield") equipped.shield = itemName;
+      if (itemName==="Dog Pet"||itemName==="Cat Pet") equipped.pet = itemName;
+      if (itemName==="Forest BG") equipped.background = itemName;
       localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
       renderAvatar();
     };
@@ -300,12 +376,45 @@
         document.getElementById('levelup-badge').classList.remove('hidden');
         document.querySelector('.rpg-avatar').classList.add('level-up');
         showConfetti();
+        playSound("audio-levelup");
         setTimeout(()=>{
           document.getElementById('levelup-badge').classList.add('hidden');
           document.querySelector('.rpg-avatar').classList.remove('level-up');
         }, 1800);
       }
       renderInventory();
+    }
+
+    // Quest log (history)
+    function addQuestLogEntry(type, name, data) {
+      questLog.push({
+        date: new Date().toLocaleString(),
+        type, name, ...data
+      });
+      if (questLog.length>100) questLog.shift();
+      localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+    }
+    function renderQuestLog() {
+      const ql = document.getElementById("questlog-content");
+      if (!questLog.length) {
+        ql.innerHTML = `<div class="text-center text-gray-500 dark:text-gray-400">No quest history yet. Complete quests to fill your log!</div>`;
+        return;
+      }
+      ql.innerHTML = questLog.slice().reverse().map(ev=>{
+        if (ev.type==="complete") {
+          return `<div class="mb-2 flex items-center gap-2">
+            <i class="fas fa-check-circle text-green-500"></i>
+            <span class="font-bold">${ev.name}</span> completed (+${ev.xp}xp, streak ${ev.streak}) <span class="text-xs text-gray-400">${ev.date}</span>
+          </div>`;
+        }
+        if (ev.type==="levelup") {
+          return `<div class="mb-2 flex items-center gap-2">
+            <i class="fas fa-star text-yellow-400"></i>
+            <span class="font-bold">Level Up!</span> Level ${ev.level} at ${ev.date}
+          </div>`;
+        }
+        return "";
+      }).join("");
     }
 
     // Habits/Quests
@@ -319,6 +428,8 @@
         h.streak = (h.streak || 0) + 1;
         h.completedToday = true;
         gainXP(xpPerHabit + 5 * h.streak);
+        addQuestLogEntry("complete", h.name, {xp: xpPerHabit + 5 * h.streak, streak: h.streak});
+        playSound("audio-quest");
       } else if (h.progress < h.goal) {
         h.completedToday = false;
       }
@@ -375,6 +486,7 @@
       document.getElementById('habit-icon').value = habit.icon;
       habitModal.classList.remove('hidden');
       document.getElementById('modal-title').textContent = "Edit Quest";
+      renderIconPicker(habit.icon);
       editingHabit = idx;
     };
     window.deleteHabit = function(idx) {
@@ -393,13 +505,15 @@
       habitModal.classList.remove('hidden');
       document.getElementById('habit-form').reset();
       document.getElementById('modal-title').textContent = "New Quest";
+      document.getElementById('habit-icon').value = questIcons[0];
+      renderIconPicker(questIcons[0]);
     };
     document.getElementById('close-modal').onclick = () => habitModal.classList.add('hidden');
     document.getElementById('habit-form').onsubmit = function(e) {
       e.preventDefault();
       const name = document.getElementById('habit-name').value;
       const goal = parseInt(document.getElementById('habit-goal').value);
-      const icon = document.getElementById('habit-icon').value || "fa-star";
+      const icon = document.getElementById('habit-icon').value || questIcons[0];
       const type = document.getElementById('habit-type').value;
       if (editingHabit !== null) {
         habits[editingHabit] = { name, goal, icon, type, progress: 0, streak: habits[editingHabit].streak||0, lastDate: todayISO(), completedToday: false };
@@ -424,8 +538,19 @@
       inventorySidebar.classList.remove('open');
       inventorySidebar.classList.add('closed');
     };
-    // Hide sidebar initially
     inventorySidebar.classList.add('closed');
+
+    // Quest Log Modal
+    const questlogModal = document.getElementById('questlog-modal');
+    document.getElementById('open-questlog').onclick = () => {
+      renderQuestLog();
+      questlogModal.classList.remove('hidden');
+      questlogModal.classList.add('visible');
+    };
+    document.getElementById('close-questlog').onclick = () => {
+      questlogModal.classList.remove('visible');
+      setTimeout(()=>questlogModal.classList.add('hidden'), 300);
+    };
 
     // Dark mode toggle
     const darkToggle = document.getElementById('dark-toggle');
@@ -444,6 +569,7 @@
     updateLocalTime(); setInterval(updateLocalTime, 60000);
 
     // On load
+    renderIconPicker(questIcons[0]);
     updateHeroDisplay();
     renderHabits();
     renderInventory();
