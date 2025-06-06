@@ -12,7 +12,7 @@
     body, .rpg-font { font-family: 'Press Start 2P', monospace, sans-serif; }
     .rpg-card { border: 3px solid #a78bfa; border-radius: 1rem; box-shadow: 0 2px 12px #8b5cf633; }
     .rpg-glow { box-shadow: 0 0 20px 4px #3b82f6cc, 0 0 0 2px #a78bfa; }
-    .level-up { animation: levelup-pop 0.function updateLocalTime() {; }
+    .level-up { animation: levelup-pop 0.8s; }
     @keyframes levelup-pop {
       0% { transform: scale(1);}
       20% { transform: scale(1.2) rotate(-2deg);}
@@ -780,7 +780,19 @@ closeModalBtn.addEventListener('click', () => {
             case "dashboard": renderHabits(); break;
             case "settings": renderSettingsPage(); break;
             case "social": renderFriendsList(); renderSocialFeed(); break;
-            case "analytics": updateAnalytics(); break;
+            case "analytics": 
+  // Destroy existing charts to prevent memory leaks and duplicate charts
+  if (progressChart) {
+    progressChart.destroy();
+    progressChart = null;
+  }
+  if (categoriesChart) {
+    categoriesChart.destroy();
+    categoriesChart = null;
+  }
+  // Update analytics after cleanup
+  updateAnalytics(); 
+break;
           }
         }
       });
@@ -795,7 +807,8 @@ closeModalBtn.addEventListener('click', () => {
   coins: 0,
   name: "untopo"  
 };
-    
+
+    let timeInterval = null;
     let habits = JSON.parse(localStorage.getItem('rpg-habits') || "[]");
     let questLog = JSON.parse(localStorage.getItem('rpg-questlog') || "[]");
     let equipped = JSON.parse(localStorage.getItem('rpg-equipped') || "{}");
@@ -1305,30 +1318,6 @@ function renderCategoriesChart() {
 }
   
   // Count quests by type
-  const counts = habits.reduce((acc, h) => {
-    acc[h.type] = (acc[h.type] || 0) + 1;
-    return acc;
-  }, {});
-  
-  const data = {
-    labels: Object.keys(counts),
-    datasets: [{
-      data: Object.values(counts),
-      backgroundColor: ['#6366f1', '#4ade80', '#f472b6', '#facc15']
-    }]
-  };
-  
-  new Chart(ctx, {
-    type: 'doughnut',
-    data: data,
-    options: {
-      responsive: true,
-      plugins: {
-        legend: { position: 'bottom' }
-      }
-    }
-  });
-}
 
 function renderQuestInsights() {
   const insights = document.getElementById('quest-insights');
@@ -1481,9 +1470,6 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
   
-  document.getElementById('import-data').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
     
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -1549,12 +1535,21 @@ function exportData() {
 
 // Initialize everything
 function initializeApp() {
+  // Clear any existing time interval
+  if (timeInterval) {
+    clearInterval(timeInterval);
+  }
+  
+  // Show onboarding modal if needed
   if (!localStorage.getItem('onboarding-done')) {
     document.getElementById('onboarding-modal').classList.remove('hidden');
   }
   
+  // Update time immediately and start interval
   updateLocalTime();
-  setInterval(updateLocalTime, 1000);
+  timeInterval = setInterval(updateLocalTime, 1000);
+  
+  // Initialize all UI components
   renderIconPicker(questIcons[0]);
   updateHeroDisplay();
   renderHabits();
@@ -1594,50 +1589,58 @@ function initializeApp() {
   initializeApp();
   
   // Add import data event listener
-  document.getElementById('import-data').addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (!file) return;
-    
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const data = JSON.parse(e.target.result);
-        
-        if (!data.hero || !data.habits || !data.questLog) {
-          throw new Error('Invalid backup file');
-        }
-        
-        hero = data.hero;
-        habits = data.habits;
-        questLog = data.questLog;
-        equipped = data.equipped || {};
-        friends = data.friends || [];
-        socialFeed = data.socialFeed || [];
-        
-        if (data.avatarCustomization) {
-          Object.assign(avatarCustomization, data.avatarCustomization);
-          Object.entries(avatarCustomization).forEach(([part, color]) => {
-            if (part !== 'confirmed') {
-              updateAvatarPart(part, color);
-            }
-          });
-        }
-        
-        localStorage.setItem('rpg-hero', JSON.stringify(hero));
-        localStorage.setItem('rpg-habits', JSON.stringify(habits));
-        localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
-        localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
-        localStorage.setItem('rpg-friends', JSON.stringify(friends));
-        localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
-        
-        initializeApp();
-        alert('Data imported successfully!');
-      } catch (err) {
-        alert('Error importing data: ' + err.message);
+document.getElementById('import-data').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      
+      // Validate data structure
+      if (!data.hero || !data.habits || !data.questLog) {
+        throw new Error('Invalid backup file');
       }
-    };
-    reader.readAsText(file);
-  });
+      
+      // Import data
+      hero = data.hero;
+      habits = data.habits;
+      questLog = data.questLog;
+      equipped = data.equipped || {};
+      friends = data.friends || [];
+      socialFeed = data.socialFeed || [];
+      
+      // Import avatar customization if it exists
+      if (data.avatarCustomization) {
+        Object.assign(avatarCustomization, data.avatarCustomization);
+        Object.entries(avatarCustomization).forEach(([part, color]) => {
+          if (part !== 'confirmed') {
+            updateAvatarPart(part, color);
+          }
+        });
+      }
+      
+      // Save all imported data to localStorage
+      localStorage.setItem('rpg-hero', JSON.stringify(hero));
+      localStorage.setItem('rpg-habits', JSON.stringify(habits));
+      localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+      localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+      localStorage.setItem('rpg-friends', JSON.stringify(friends));
+      localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
+      
+      // Refresh the entire UI
+      initializeApp();
+      
+      alert('Data imported successfully!');
+    } catch (err) {
+      alert('Error importing data: ' + err.message);
+    }
+  };
+  
+  // Start reading the file
+  reader.readAsText(file);
+});
   
   // Add onboarding modal close handler
   document.getElementById('close-onboarding').addEventListener('click', function() {
