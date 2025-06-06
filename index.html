@@ -1734,20 +1734,6 @@ function showTooltip(elementId, text, position = 'top') {
   }, 5000);
 }
 
-// Update hero initialization to include current time
-if (!localStorage.getItem('rpg-hero')) {
-  hero = {
-    xp: 0,
-    level: 1,
-    items: [],
-    achievements: [],
-    coins: 0,
-    name: "untopo",  // Using your login
-    created_at: "2025-06-06 07:15:53" // Using your current time
-  };
-  localStorage.setItem('rpg-hero', JSON.stringify(hero));
-}
-
 // Initialize equipped items
 Object.entries(equipped).forEach(([type, itemName]) => {
   const item = allItems.find(i => i.name === itemName);
