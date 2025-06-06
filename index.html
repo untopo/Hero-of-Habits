@@ -380,6 +380,15 @@
           </select>
         </div>
       </div>
+<div class="mt-8 border-t pt-4 border-red-200 dark:border-red-800">
+  <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Danger Zone</h3>
+  <div class="space-y-2">
+    <button onclick="resetProgress()" class="rpg-btn px-3 py-1 rounded bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100 font-bold text-xs hover:bg-red-200 dark:hover:bg-red-800">
+      <i class="fas fa-trash"></i> Reset All Progress
+    </button>
+    <p class="text-xs text-gray-600 dark:text-gray-400">This will delete all your quests, achievements, and reset your level. This action cannot be undone.</p>
+  </div>
+</div>
       <div class="mt-4 flex gap-3">
         <button onclick="exportData()" class="rpg-btn px-3 py-1 rounded bg-indigo-200 text-indigo-900 font-bold text-xs">
           <i class="fas fa-download"></i> Export Data
@@ -389,6 +398,15 @@
           <input type="file" id="import-data" accept="application/json" class="hidden">
         </label>
       </div>
+      <div class="mt-8 border-t pt-4 border-red-200 dark:border-red-800">
+  <h3 class="text-lg font-bold text-red-600 dark:text-red-400 mb-2">Danger Zone</h3>
+  <div class="space-y-2">
+    <button onclick="resetProgress()" class="rpg-btn px-3 py-1 rounded bg-red-100 dark:bg-red-900 text-red-900 dark:text-red-100 font-bold text-xs hover:bg-red-200 dark:hover:bg-red-800">
+      <i class="fas fa-trash"></i> Reset All Progress
+    </button>
+    <p class="text-xs text-gray-600 dark:text-gray-400">This will delete all your quests, achievements, and reset your level. This action cannot be undone.</p>
+  </div>
+</div>
     </div>
 
     <!-- Modals -->
@@ -1045,9 +1063,14 @@ function renderHabits() {
         </div>
         <div class="flex gap-2">
           ${!habit.completedToday ? `
-            <button onclick="incrementHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-green-100 dark:bg-green-800">
-              <i class="fas fa-plus"></i>
-            </button>
+            <div class="flex gap-1">
+              <button onclick="decrementHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800 text-red-900 dark:text-red-100" title="Negative progress (-${xpPerHabit} XP)">
+                <i class="fas fa-minus"></i>
+              </button>
+              <button onclick="incrementHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-100" title="Positive progress (+${xpPerHabit} XP)">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
           ` : ''}
           <button onclick="editHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-800">
             <i class="fas fa-edit"></i>
@@ -1173,6 +1196,60 @@ function getStats() {
     highestStreak: Math.max(0, ...habits.map(h => h.streak || 0)),
     totalXP: hero.xp + (hero.level - 1) * baseXp
   };
+}
+
+    // Add these functions after the incrementHabit function:
+
+function decrementHabit(index) {
+  const habit = habits[index];
+  if (habit.completedToday) return;
+  
+  if (habit.progress > 0) {
+    habit.progress--;
+    
+    // Remove XP and coins
+    hero.xp -= xpPerHabit;
+    hero.coins = Math.max(0, hero.coins - 5); // Prevent negative coins
+    
+    // Handle level down if necessary
+    while (hero.xp < 0 && hero.level > 1) {
+      hero.level--;
+      hero.xp += xpToNext(hero.level);
+    }
+    
+    // Prevent negative XP
+    hero.xp = Math.max(0, hero.xp);
+    
+    questLog.unshift({
+      date: new Date().toLocaleString(),
+      action: `Negative progress in: ${habit.name} (-${xpPerHabit} XP)`
+    });
+    
+    // Reset streak for bad habits
+    if (habit.progress === 0) {
+      habit.streak = 0;
+    }
+    
+    localStorage.setItem('rpg-habits', JSON.stringify(habits));
+    localStorage.setItem('rpg-hero', JSON.stringify(hero));
+    localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+    
+    renderHabits();
+    updateXPDisplay();
+  }
+}
+
+function updateXPDisplay() {
+  const nextLevel = xpToNext(hero.level);
+  const xpBar = document.getElementById('xp-bar');
+  const xpText = document.getElementById('hero-xp');
+  const levelText = document.getElementById('hero-level');
+  const coinsText = document.getElementById('coins');
+  
+  xpBar.style.width = `${(hero.xp / nextLevel) * 100}%`;
+  xpText.textContent = `${hero.xp}/${nextLevel}`;
+  levelText.textContent = hero.level;
+  coinsText.innerHTML = `<i class="fas fa-coins"></i> ${hero.coins}`;
 }
 
 // Charts for Analytics
@@ -1378,6 +1455,53 @@ document.getElementById('import-data').addEventListener('change', function(e) {
   };
   reader.readAsText(file);
 });
+
+function resetProgress() {
+  if (!confirm('WARNING: This will delete all your quests, achievements, and reset your level to 1. This action cannot be undone.\n\nAre you absolutely sure?')) return;
+  if (!confirm('Last warning: All progress will be lost. Continue?')) return;
+  
+  hero = {
+    xp: 0,
+    level: 1,
+    items: [],
+    achievements: [],
+    coins: 0,
+    name: hero.name,  // Preserve the name
+    created_at: new Date().toISOString() // Reset creation date
+  };
+  
+  habits = [];
+  questLog = [{
+    date: new Date().toLocaleString(),
+    action: "Progress reset"
+  }];
+  equipped = {};
+  
+  localStorage.setItem('rpg-hero', JSON.stringify(hero));
+  localStorage.setItem('rpg-habits', JSON.stringify(habits));
+  localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+  localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+  
+  // Reset but keep customization
+  const savedCustomization = {
+    skin: localStorage.getItem('avatar-skin'),
+    hair: localStorage.getItem('avatar-hair'),
+    eyes: localStorage.getItem('avatar-eyes'),
+    confirmed: localStorage.getItem('avatar-confirmed')
+  };
+  
+  // Clear all localStorage except theme
+  const savedTheme = localStorage.getItem('theme');
+  localStorage.clear();
+  localStorage.setItem('theme', savedTheme);
+  
+  // Restore customization
+  Object.entries(savedCustomization).forEach(([key, value]) => {
+    if (value) localStorage.setItem(`avatar-${key}`, value);
+  });
+  
+  location.reload();
+}
 
 // Initialize everything on load
 window.addEventListener('load', function() {
