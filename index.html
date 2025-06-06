@@ -793,7 +793,7 @@ closeModalBtn.addEventListener('click', () => {
       items: [],
       achievements: [],
       coins: 0,
-      name: "Hero"
+      name: "untopo"
     };
     
     let habits = JSON.parse(localStorage.getItem('rpg-habits') || "[]");
@@ -1451,53 +1451,58 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-  const file = e.target.files[0];
-  if (!file) return;
+  document.addEventListener('DOMContentLoaded', function() {
+  initializeApp();
   
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      
-      // Validate data structure
-      if (!data.hero || !data.habits || !data.questLog) {
-        throw new Error('Invalid backup file');
+  document.getElementById('import-data').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        
+        // Validate data structure
+        if (!data.hero || !data.habits || !data.questLog) {
+          throw new Error('Invalid backup file');
+        }
+        
+        // Import data
+        hero = data.hero;
+        habits = data.habits;
+        questLog = data.questLog;
+        equipped = data.equipped || {};
+        friends = data.friends || [];
+        socialFeed = data.socialFeed || [];
+        
+        if (data.avatarCustomization) {
+          Object.assign(avatarCustomization, data.avatarCustomization);
+          Object.entries(avatarCustomization).forEach(([part, color]) => {
+            if (part !== 'confirmed') {
+              updateAvatarPart(part, color);
+            }
+          });
+        }
+        
+        // Save all data
+        localStorage.setItem('rpg-hero', JSON.stringify(hero));
+        localStorage.setItem('rpg-habits', JSON.stringify(habits));
+        localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+        localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+        localStorage.setItem('rpg-friends', JSON.stringify(friends));
+        localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
+        
+        // Refresh UI
+        initializeApp();
+        
+        alert('Data imported successfully!');
+      } catch (err) {
+        alert('Error importing data: ' + err.message);
       }
-      
-      // Import data
-      hero = data.hero;
-      habits = data.habits;
-      questLog = data.questLog;
-      equipped = data.equipped || {};
-      friends = data.friends || [];
-      socialFeed = data.socialFeed || [];
-      
-      if (data.avatarCustomization) {
-        Object.assign(avatarCustomization, data.avatarCustomization);
-        Object.entries(avatarCustomization).forEach(([part, color]) => {
-          if (part !== 'confirmed') {
-            updateAvatarPart(part, color);
-          }
-        });
-      }
-      
-      // Save all data
-      localStorage.setItem('rpg-hero', JSON.stringify(hero));
-      localStorage.setItem('rpg-habits', JSON.stringify(habits));
-      localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
-      localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
-      localStorage.setItem('rpg-friends', JSON.stringify(friends));
-      localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
-      
-      // Refresh UI
-      initializeApp();
-      
-      alert('Data imported successfully!');
-    } catch (err) {
-      alert('Error importing data: ' + err.message);
-    }
-  };
-  reader.readAsText(file);
+    };
+    reader.readAsText(file);
+  });
 });
 
     function updateLocalTime() {
@@ -1543,7 +1548,7 @@ function initializeApp() {
     sound.play().catch(err => console.log('Audio playback prevented'));
   }
 }
-    document.addEventListener('DOMContentLoaded', initializeApp);
+  
     document.getElementById('import-data').addEventListener('change', function(e) {
   </script>
 </body>
