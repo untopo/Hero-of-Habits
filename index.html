@@ -472,6 +472,17 @@ html.dark #onboarding-modal .text-gray-700 {
             <i class="fas fa-times"></i>
           </button>
         </div>
+        <div class="mb-4">
+  <label class="block mb-1 text-sm font-medium">Quick Templates</label>
+  <div class="grid grid-cols-2 gap-2">
+    <select id="template-category" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+      <option value="">Choose category...</option>
+    </select>
+    <select id="template-quest" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
+      <option value="">Select template...</option>
+    </select>
+  </div>
+</div>
         <form id="habit-form" class="space-y-4">
           <div>
             <label class="block mb-1 text-sm font-medium" for="habit-name">Quest Name</label>
@@ -812,6 +823,83 @@ closeModalBtn.addEventListener('click', () => {
   editingHabit = null;
   document.getElementById('modal-title').textContent = 'New Quest';
 });
+
+    function renderHabits() {
+  const list = document.getElementById('habits-list');
+  
+  // Group habits by type
+  const groupedHabits = habits.reduce((acc, habit, index) => {
+    const type = habit.type;
+    if (!acc[type]) acc[type] = [];
+    acc[type].push({...habit, index});
+    return acc;
+  }, {});
+
+  // Create sections for each type
+  const sections = Object.entries(groupedHabits).map(([type, habits]) => {
+    const typeIcon = type === 'mind' ? '🧠' : type === 'body' ? '💪' : '✨';
+    const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
+    
+    return `
+      <div class="mb-8">
+        <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+          ${typeIcon} ${typeTitle} Quests
+          <span class="text-sm font-normal text-gray-600 dark:text-gray-400">
+            (${habits.filter(h => !h.completedToday).length} remaining)
+          </span>
+        </h2>
+        <div class="space-y-4">
+          ${habits.map(habit => `
+            <div class="rpg-card p-4 ${habit.completedToday ? 'opacity-50' : ''}">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl">${habit.icon}</span>
+                  <div>
+                    <h3 class="font-bold">${habit.name}</h3>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                      Progress: ${habit.progress}/${habit.goal} | Streak: ${habit.streak} days
+                      ${habit.kind !== 'recurring' ? `| Type: ${habit.kind}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  ${!habit.completedToday ? `
+                    <div class="flex gap-1">
+                      <button onclick="decrementHabit(${habit.index})" 
+                              class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800 text-red-900 dark:text-red-100" 
+                              title="Negative progress (-${xpPerHabit} XP)">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <button onclick="incrementHabit(${habit.index})" 
+                              class="rpg-btn px-2 py-1 rounded-full bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-100" 
+                              title="Positive progress (+${xpPerHabit} XP)">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  ` : ''}
+                  <button onclick="editHabit(${habit.index})" 
+                          class="rpg-btn px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-800">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="deleteHabit(${habit.index})" 
+                          class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  list.innerHTML = sections || `
+    <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+      No quests yet. Click "New Quest" to get started!
+    </div>
+  `;
+}
     
     // --- Avatar Customization System ---
     const avatarCustomization = {
@@ -975,6 +1063,38 @@ break;
   "☮️", "🛡️", "🐕", "🐱", "⛺️", "🌲",
   "🚀"
 ];
+
+    // Quest Templates System
+const questTemplates = {
+  health: {
+    name: "Health & Fitness",
+    icon: "💪",
+    templates: [
+      { name: "Daily Exercise", icon: "💪", type: "body", goal: 1, kind: "recurring", description: "Complete your daily workout routine" },
+      { name: "Water Intake", icon: "💧", type: "body", goal: 8, kind: "recurring", description: "Drink 8 glasses of water" },
+      { name: "Sleep Schedule", icon: "🛏️", type: "body", goal: 1, kind: "recurring", description: "Go to bed on time" },
+      { name: "Meditation", icon: "🧘", type: "mind", goal: 1, kind: "recurring", description: "Daily meditation practice" }
+    ]
+  },
+  productivity: {
+    name: "Productivity",
+    icon: "⚡️",
+    templates: [
+      { name: "Focus Time", icon: "🎯", type: "mind", goal: 4, kind: "recurring", description: "Complete 4 focused work sessions" },
+      { name: "Task Planning", icon: "📝", type: "mind", goal: 1, kind: "recurring", description: "Plan your daily tasks" },
+      { name: "Email Management", icon: "📧", type: "other", goal: 2, kind: "recurring", description: "Process email inbox" }
+    ]
+  },
+  learning: {
+    name: "Learning",
+    icon: "📚",
+    templates: [
+      { name: "Study Session", icon: "📚", type: "mind", goal: 1, kind: "recurring", description: "Complete daily study session" },
+      { name: "Reading", icon: "📖", type: "mind", goal: 30, kind: "recurring", description: "Read for 30 minutes" },
+      { name: "Practice Skill", icon: "🎯", type: "mind", goal: 1, kind: "recurring", description: "Practice your chosen skill" }
+    ]
+  }
+};
 
     function renderIconPicker(selectedIcon) {
   const picker = document.getElementById('icon-picker');
@@ -1156,40 +1276,79 @@ function showConfetti() {
 
 function renderHabits() {
   const list = document.getElementById('habits-list');
-  list.innerHTML = habits.map((habit, index) => `
-    <div class="rpg-card p-4 ${habit.completedToday ? 'opacity-50' : ''}">
-      <div class="flex justify-between items-center">
-        <div class="flex items-center gap-2">
-          <span class="text-2xl">${habit.icon}</span>
-          <div>
-            <h3 class="font-bold">${habit.name}</h3>
-            <div class="text-sm text-gray-600 dark:text-gray-400">
-              Progress: ${habit.progress}/${habit.goal} | Streak: ${habit.streak} days
-              ${habit.kind !== 'recurring' ? `| Type: ${habit.kind}` : ''}
+  
+  // Group habits by type
+  const groupedHabits = habits.reduce((acc, habit, index) => {
+    const type = habit.type;
+    if (!acc[type]) acc[type] = [];
+    acc[type].push({...habit, index});
+    return acc;
+  }, {});
+
+  // Create sections for each type
+  const sections = Object.entries(groupedHabits).map(([type, habits]) => {
+    const typeIcon = type === 'mind' ? '🧠' : type === 'body' ? '💪' : '✨';
+    const typeTitle = type.charAt(0).toUpperCase() + type.slice(1);
+    
+    return `
+      <div class="mb-8">
+        <h2 class="text-lg font-bold mb-4 flex items-center gap-2">
+          ${typeIcon} ${typeTitle} Quests
+          <span class="text-sm font-normal text-gray-600 dark:text-gray-400">
+            (${habits.filter(h => !h.completedToday).length} remaining)
+          </span>
+        </h2>
+        <div class="space-y-4">
+          ${habits.map(habit => `
+            <div class="rpg-card p-4 ${habit.completedToday ? 'opacity-50' : ''}">
+              <div class="flex justify-between items-center">
+                <div class="flex items-center gap-2">
+                  <span class="text-2xl">${habit.icon}</span>
+                  <div>
+                    <h3 class="font-bold">${habit.name}</h3>
+                    <div class="text-sm text-gray-600 dark:text-gray-400">
+                      Progress: ${habit.progress}/${habit.goal} | Streak: ${habit.streak} days
+                      ${habit.kind !== 'recurring' ? `| Type: ${habit.kind}` : ''}
+                    </div>
+                  </div>
+                </div>
+                <div class="flex gap-2">
+                  ${!habit.completedToday ? `
+                    <div class="flex gap-1">
+                      <button onclick="decrementHabit(${habit.index})" 
+                              class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800 text-red-900 dark:text-red-100" 
+                              title="Negative progress (-${xpPerHabit} XP)">
+                        <i class="fas fa-minus"></i>
+                      </button>
+                      <button onclick="incrementHabit(${habit.index})" 
+                              class="rpg-btn px-2 py-1 rounded-full bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-100" 
+                              title="Positive progress (+${xpPerHabit} XP)">
+                        <i class="fas fa-plus"></i>
+                      </button>
+                    </div>
+                  ` : ''}
+                  <button onclick="editHabit(${habit.index})" 
+                          class="rpg-btn px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-800">
+                    <i class="fas fa-edit"></i>
+                  </button>
+                  <button onclick="deleteHabit(${habit.index})" 
+                          class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-        <div class="flex gap-2">
-          ${!habit.completedToday ? `
-            <div class="flex gap-1">
-              <button onclick="decrementHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800 text-red-900 dark:text-red-100" title="Negative progress (-${xpPerHabit} XP)">
-                <i class="fas fa-minus"></i>
-              </button>
-              <button onclick="incrementHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-100" title="Positive progress (+${xpPerHabit} XP)">
-                <i class="fas fa-plus"></i>
-              </button>
-            </div>
-          ` : ''}
-          <button onclick="editHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-800">
-            <i class="fas fa-edit"></i>
-          </button>
-          <button onclick="deleteHabit(${index})" class="rpg-btn px-2 py-1 rounded-full bg-red-100 dark:bg-red-800">
-            <i class="fas fa-trash"></i>
-          </button>
+          `).join('')}
         </div>
       </div>
+    `;
+  }).join('');
+
+  list.innerHTML = sections || `
+    <div class="text-center text-gray-500 dark:text-gray-400 py-8">
+      No quests yet. Click "New Quest" to get started!
     </div>
-  `).join('');
+  `;
 }
 
 function gainXP(amount) {
@@ -1712,10 +1871,12 @@ function showTooltip(elementId, text, position = 'top') {
 
 // Initialize tutorial when DOM is loaded
 document.addEventListener('DOMContentLoaded', function() {
+    initializeTemplates();
     const nextButton = document.getElementById('next-tutorial');
     const prevButton = document.getElementById('prev-tutorial');
     const closeButton = document.getElementById('close-onboarding');
     const onboardingModal = document.getElementById('onboarding-modal');
+  
 
     if (nextButton) {
         nextButton.addEventListener('click', () => {
