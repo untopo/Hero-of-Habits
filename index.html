@@ -788,13 +788,13 @@ closeModalBtn.addEventListener('click', () => {
 
     // --- RPG Data Management ---
     let hero = JSON.parse(localStorage.getItem('rpg-hero')) || {
-      xp: 0,
-      level: 1,
-      items: [],
-      achievements: [],
-      coins: 0,
-      name: "untopo"
-    };
+  xp: 0,
+  level: 1,
+  items: [],
+  achievements: [],
+  coins: 0,
+  name: "untopo"  
+};
     
     let habits = JSON.parse(localStorage.getItem('rpg-habits') || "[]");
     let questLog = JSON.parse(localStorage.getItem('rpg-questlog') || "[]");
@@ -1242,25 +1242,28 @@ function updateAnalytics() {
   renderQuestInsights();
 }
 
+let progressChart = null;
+let categoriesChart = null;
+
 function renderProgressChart() {
   const ctx = document.getElementById('progress-chart')?.getContext('2d');
   if (!ctx) return;
   
-  // Sample data - in a real app, this would use historical data
-  const data = {
-    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
-    datasets: [{
-      label: 'Completed Quests',
-      data: [4, 5, 3, 6, 4, 5, 4],
-      borderColor: '#6366f1',
-      tension: 0.4
-    }]
-  };
+  if (progressChart) {
+    progressChart.destroy();
+  }
   
-  // If using Chart.js (add script: https://cdn.jsdelivr.net/npm/chart.js)
-  new Chart(ctx, {
+  progressChart = new Chart(ctx, {
     type: 'line',
-    data: data,
+    data: {
+      labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      datasets: [{
+        label: 'Completed Quests',
+        data: [4, 5, 3, 6, 4, 5, 4],
+        borderColor: '#6366f1',
+        tension: 0.4
+      }]
+    },
     options: {
       responsive: true,
       plugins: {
@@ -1273,6 +1276,33 @@ function renderProgressChart() {
 function renderCategoriesChart() {
   const ctx = document.getElementById('categories-chart')?.getContext('2d');
   if (!ctx) return;
+  
+  if (categoriesChart) {
+    categoriesChart.destroy();
+  }
+  
+  const counts = habits.reduce((acc, h) => {
+    acc[h.type] = (acc[h.type] || 0) + 1;
+    return acc;
+  }, {});
+  
+  categoriesChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: Object.keys(counts),
+      datasets: [{
+        data: Object.values(counts),
+        backgroundColor: ['#6366f1', '#4ade80', '#f472b6', '#facc15']
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+}
   
   // Count quests by type
   const counts = habits.reduce((acc, h) => {
@@ -1515,12 +1545,17 @@ function exportData() {
       hour: '2-digit',
       minute: '2-digit',
       second: '2-digit',
-      hour12: false 
+      hour12: false,
+      timeZone: 'UTC'
     });
 }
 
 // Initialize everything
 function initializeApp() {
+  if (!localStorage.getItem('onboarding-done')) {
+    document.getElementById('onboarding-modal').classList.remove('hidden');
+  }
+  
   updateLocalTime();
   setInterval(updateLocalTime, 1000);
   renderIconPicker(questIcons[0]);
@@ -1548,7 +1583,71 @@ function initializeApp() {
     sound.play().catch(err => console.log('Audio playback prevented'));
   }
 }
+
+    document.addEventListener('DOMContentLoaded', function() {
+  // Initialize theme
+  let theme = localStorage.getItem('theme');
+  if (!theme || theme === 'system') {
+    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  setDarkMode(theme === 'dark');
+  document.getElementById('theme-select').value = localStorage.getItem('theme') || 'system';
   
+  // Initialize the app
+  initializeApp();
+  
+  // Add import data event listener
+  document.getElementById('import-data').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const data = JSON.parse(e.target.result);
+        
+        if (!data.hero || !data.habits || !data.questLog) {
+          throw new Error('Invalid backup file');
+        }
+        
+        hero = data.hero;
+        habits = data.habits;
+        questLog = data.questLog;
+        equipped = data.equipped || {};
+        friends = data.friends || [];
+        socialFeed = data.socialFeed || [];
+        
+        if (data.avatarCustomization) {
+          Object.assign(avatarCustomization, data.avatarCustomization);
+          Object.entries(avatarCustomization).forEach(([part, color]) => {
+            if (part !== 'confirmed') {
+              updateAvatarPart(part, color);
+            }
+          });
+        }
+        
+        localStorage.setItem('rpg-hero', JSON.stringify(hero));
+        localStorage.setItem('rpg-habits', JSON.stringify(habits));
+        localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+        localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+        localStorage.setItem('rpg-friends', JSON.stringify(friends));
+        localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
+        
+        initializeApp();
+        alert('Data imported successfully!');
+      } catch (err) {
+        alert('Error importing data: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  });
+  
+  // Add onboarding modal close handler
+  document.getElementById('close-onboarding').addEventListener('click', function() {
+    document.getElementById('onboarding-modal').classList.add('hidden');
+    localStorage.setItem('onboarding-done', 'true');
+  });
+});
     
   </script>
 </body>
