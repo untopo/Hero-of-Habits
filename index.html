@@ -96,15 +96,15 @@
       #sidebar-modal, #questlog-modal { width: 100vw; left:0; }
     }
     /* Logo tweaks */
-    .hoh-logo { width: 120px; max-width: 40vw; margin-bottom: 0.5rem;}
+    .hoh-logo { width: 100px; max-width: 33vw; margin-bottom: 0.3rem;}
     @media (min-width: 768px) {
-      .hoh-logo { width: 160px; }
+      .hoh-logo { width: 120px; }
     }
   </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 via-purple-100 to-indigo-200 dark:from-gray-900 dark:via-gray-800 dark:to-indigo-900 text-gray-900 dark:text-gray-100 transition-colors min-h-screen rpg-font">
   <!-- Hero of Habits Logo at top center -->
-  <div class="flex justify-center mt-3 mb-2">
+  <div class="flex justify-center mt-2 mb-1">
     <img src="logo.png" alt="Hero of Habits Logo" class="hoh-logo drop-shadow-lg" />
   </div>
   <div class="container mx-auto px-4 py-8 max-w-3xl">
@@ -112,7 +112,7 @@
     <div class="flex justify-between items-center mb-6">
       <div class="flex gap-2">
         <button class="rpg-btn px-3 py-1 rounded bg-indigo-100 dark:bg-indigo-800 text-indigo-900 dark:text-indigo-200 font-bold text-xs spa-nav" data-tab="dashboard"><i class="fas fa-gauge"></i> Dashboard</button>
-        <button class="rpg-btn px-3 py-1 rounded bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-200 font-bold text-xs spa-nav" data-tab="inventory"><i class="fas fa-suitcase"></i> Inventory</button>
+        <button class="rpg-btn px-3 py-1 rounded bg-green-100 dark:bg-green-800 text-green-900 dark:text-green-200 font-bold text-xs spa-nav" data-tab="inventory"><i class="fas fa-archive"></i> Inventory</button>
         <button class="rpg-btn px-3 py-1 rounded bg-yellow-100 dark:bg-yellow-800 text-yellow-900 dark:text-yellow-100 font-bold text-xs spa-nav" data-tab="achievements"><i class="fas fa-medal"></i> Achievements</button>
         <button class="rpg-btn px-3 py-1 rounded bg-pink-100 dark:bg-pink-800 text-pink-900 dark:text-pink-200 font-bold text-xs spa-nav" data-tab="questlog"><i class="fas fa-scroll"></i> Quest Log</button>
       </div>
@@ -156,7 +156,7 @@
     </div>
     <!-- Inventory Page -->
     <div id="inventory" class="spa-section">
-      <h2 class="text-xl font-bold mb-2"><i class="fas fa-backpack"></i> Inventory</h2>
+      <h2 class="text-xl font-bold mb-2"><i class="fas fa-archive"></i> Inventory</h2>
       <div class="flex flex-wrap gap-6" id="inventory-items"></div>
     </div>
     <!-- Achievements Page -->
@@ -190,7 +190,6 @@
             <select id="habit-type" class="w-full px-3 py-2 border rounded focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-gray-200">
               <option value="mind">🧠 Mind</option>
               <option value="body">💪 Body</option>
-              <option value="social">🤝 Social</option>
               <option value="other">✨ Other</option>
             </select>
           </div>
@@ -540,7 +539,6 @@
         let typeColor = {
           mind: "from-blue-200 to-blue-500 dark:from-blue-900 dark:to-blue-800",
           body: "from-green-200 to-green-500 dark:from-green-900 dark:to-green-800",
-          social: "from-pink-200 to-pink-500 dark:from-pink-900 dark:to-pink-800",
           other: "from-yellow-200 to-yellow-500 dark:from-yellow-900 dark:to-yellow-800"
         }[habit.type] || "from-indigo-200 to-indigo-500";
         habitsList.innerHTML += `
