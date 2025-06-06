@@ -542,13 +542,17 @@
 
   <!-- Charts -->
   <div class="grid md:grid-cols-2 gap-4 mb-8">
-    <div class="rpg-card p-4">
+    <div class="rpg-card p-4 h-[300px]">
       <h3 class="font-bold mb-2">Progress Over Time</h3>
-      <canvas id="progress-chart" height="200"></canvas>
+      <div class="relative h-[250px]">
+        <canvas id="progress-chart"></canvas>
+      </div>
     </div>
-    <div class="rpg-card p-4">
+    <div class="rpg-card p-4 h-[300px]">
       <h3 class="font-bold mb-2">Quest Categories</h3>
-      <canvas id="categories-chart" height="200"></canvas>
+      <div class="relative h-[250px]">
+        <canvas id="categories-chart"></canvas>
+      </div>
     </div>
   </div>
 
@@ -1202,7 +1206,12 @@ function updateAnalytics() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        }
+      }
     }
   });
   
@@ -1225,7 +1234,12 @@ function updateAnalytics() {
     },
     options: {
       responsive: true,
-      maintainAspectRatio: false
+      maintainAspectRatio: true,
+      plugins: {
+        legend: {
+          position: 'top',
+        }
+      }
     }
   });
   
