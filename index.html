@@ -487,15 +487,26 @@
       setDarkMode(isDark);
     });
 
-    // Initialize theme with system preference support
-    (function() {
-      let theme = localStorage.getItem('theme');
-      if (!theme || theme === 'system') {
-        theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-      }
-      setDarkMode(theme === 'dark');
-      document.getElementById('theme-select').value = localStorage.getItem('theme') || 'system';
-    })();
+    // Initialize theme
+(function() {
+  let theme = localStorage.getItem('theme');
+  if (!theme || theme === 'system') {
+    theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  setDarkMode(theme === 'dark');
+  document.getElementById('theme-select').value = localStorage.getItem('theme') || 'system';
+})();
+
+// Add this right after the initialization
+document.getElementById('theme-select').addEventListener('change', function(e) {
+  const theme = e.target.value;
+  if (theme === 'system') {
+    setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+  } else {
+    setDarkMode(theme === 'dark');
+  }
+  localStorage.setItem('theme', theme);
+});
 
     // --- Avatar Customization System ---
     const avatarCustomization = {
@@ -738,24 +749,105 @@
       }
     ];
 
-    // Rest of your existing functions...
-    [Your existing functions for unlockItem, grantAchievements, renderInventoryPage, etc.]
+    function renderInventoryPage() {
+  const el = document.getElementById('inventory-items');
+  el.innerHTML = allItems.map(item => {
+    const unlocked = hero.items.includes(item.name);
+    return `
+      <div class="flex flex-col items-center text-center cursor-pointer ${unlocked?'':'opacity-30'}"
+        onclick="equipItem('${item.name}')"
+        title="${item.name}">
+        <span class="text-4xl"><i class="fas ${item.icon}"></i></span>
+        <span class="text-xs mt-1">${item.name}</span>
+      </div>`;
+  }).join("");
+}
 
-    // Initialize everything
-    function initializeApp() {
-      renderIconPicker(questIcons[0]);
-      updateHeroDisplay();
-      renderHabits();
-      renderAvatar();
-      renderInventoryPage();
-      renderAchievementsPage();
-      renderQuestLogPage();
-      renderShopPage();
-      renderStatsPage();
-      renderSettingsPage();
-      grantAchievements();
-      updateCustomizerVisibility();
-    }
+function renderShopPage() {
+  document.getElementById('shop-items').innerHTML = shopItems.map(item => {
+    const owned = hero.items.includes(item.name);
+    return `
+      <div class="shop-item ${owned?'locked':''}">
+        <span class="text-xl"><i class="fas ${item.icon}"></i></span>
+        <span class="ml-2 font-bold">${item.name}</span>
+        <span class="ml-2 text-xs text-gray-500">(${item.type})</span>
+        <span class="ml-3 text-yellow-700"><i class="fas fa-coins"></i> ${item.price}</span>
+        ${owned ? 
+          `<span class="ml-3 text-green-700 font-bold">Owned</span>` : 
+          `<button onclick="buyShopItem('${item.name}')" class="ml-4 px-2 py-1 text-xs rounded bg-yellow-200 font-bold hover:bg-yellow-300">Buy</button>`}
+      </div>`;
+  }).join('');
+}
+
+function renderStatsPage() {
+  const stats = getStats();
+  document.getElementById('stats-content').innerHTML = `
+    <div class="stat-label">Total Quests Completed:</div> <b>${stats.completed}</b>
+    <div class="stat-label">Current Quests:</div> <b>${stats.totalQuests}</b>
+    <div class="stat-label">Highest Streak:</div> <b>${stats.highestStreak}</b>
+    <div class="stat-label">Total XP Earned:</div> <b>${stats.totalXP}</b>
+    <div class="stat-label">Coins Collected:</div> <b>${hero.coins||0}</b>
+  `;
+}
+
+function renderQuestLogPage() {
+  const ql = document.getElementById("questlog-content");
+  if (!questLog.length) {
+    ql.innerHTML = `<div class="text-center text-gray-500">No quest history yet. Complete quests to fill your log!</div>`;
+    return;
+  }
+  ql.innerHTML = questLog.reverse().map(entry => {
+    return `<div class="mb-2">${entry.date}: ${entry.action}</div>`;
+  }).join('');
+}
+
+function renderAchievementsPage() {
+  const el = document.getElementById('achievements-list');
+  el.innerHTML = allAchievements.map(ach => {
+    const unlocked = hero.achievements.includes(ach.key);
+    return `<div class="flex items-start gap-4 mb-4 ${unlocked?'achievement-unlocked':'achievement-locked'}">
+      <div class="text-3xl mt-1"><i class="fas ${ach.icon}"></i></div>
+      <div>
+        <div class="font-bold">${ach.name}</div>
+        <div class="text-sm mb-1">${ach.desc}</div>
+        <div class="text-xs ${unlocked?'text-green-600':'text-gray-400'}">${unlocked?'Unlocked':'Locked'}</div>
+      </div>
+    </div>`;
+  }).join("");
+}
+
+function showConfetti() {
+  const confetti = document.getElementById('confetti');
+  confetti.innerHTML = "";
+  confetti.classList.remove('hidden');
+  const colors = ['#4ade80', '#6366f1', '#7c3aed', '#fbbf24', '#f472b6'];
+  for (let i=0; i<32; i++) {
+    let el = document.createElement('div');
+    el.className = "confetti-piece";
+    el.style.background = colors[Math.floor(Math.random()*colors.length)];
+    el.style.left = (5 + Math.random()*90) + "vw";
+    el.style.top = (Math.random()*10) + "vh";
+    el.style.transform = `rotate(${Math.random()*360}deg)`;
+    confetti.appendChild(el);
+  }
+  setTimeout(()=>{ confetti.classList.add('hidden'); }, 1300);
+}
+
+// Initialize everything
+function initializeApp() {
+  renderIconPicker(questIcons[0]);
+  updateHeroDisplay();
+  renderHabits();
+  renderAvatar();
+  renderInventoryPage();
+  renderAchievementsPage();
+  renderQuestLogPage();
+  renderShopPage();
+  renderStatsPage();
+  renderSettingsPage();
+  grantAchievements();
+  updateCustomizerVisibility();
+}
 
     // Call initialize function when document is ready
     document.addEventListener('DOMContentLoaded', initializeApp);
