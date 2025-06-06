@@ -974,7 +974,7 @@ function renderQuestLogPage() {
     ql.innerHTML = `<div class="text-center text-gray-500">No quest history yet. Complete quests to fill your log!</div>`;
     return;
   }
-  ql.innerHTML = questLog.reverse().map(entry => {
+  ql.innerHTML = questLog.slice().reverse().map(entry => {
     return `<div class="mb-2">${entry.date}: ${entry.action}</div>`;
   }).join('');
 }
@@ -1501,8 +1501,24 @@ document.getElementById('import-data').addEventListener('change', function(e) {
   reader.readAsText(file);
 });
 
+    function updateLocalTime() {
+  const now = new Date();
+  document.getElementById('local-time').textContent = 
+    now.toLocaleString('en-US', { 
+      year: 'numeric', 
+      month: '2-digit', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false 
+    });
+}
+setInterval(updateLocalTime, 1000); // Update every second
+
 // Initialize everything
 function initializeApp() {
+  updateLocalTime();
   renderIconPicker(questIcons[0]);
   updateHeroDisplay();
   renderHabits();
