@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body, .rpg-font { font-family: 'Press Start 2P', monospace, sans-serif; }
     .rpg-card { border: 3px solid #a78bfa; border-radius: 1rem; box-shadow: 0 2px 12px #8b5cf633; }
@@ -252,6 +253,12 @@
         <button class="rpg-btn px-3 py-1 rounded bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 font-bold text-xs spa-nav" data-tab="settings">
           <i class="fas fa-cog"></i> Settings
         </button>
+        <button class="rpg-btn px-3 py-1 rounded bg-purple-100 dark:bg-purple-800 text-purple-900 dark:text-purple-200 font-bold text-xs spa-nav" data-tab="social">
+  <i class="fas fa-users"></i> Social
+</button>
+<button class="rpg-btn px-3 py-1 rounded bg-blue-100 dark:bg-blue-800 text-blue-900 dark:text-blue-200 font-bold text-xs spa-nav" data-tab="analytics">
+  <i class="fas fa-chart-line"></i> Analytics
+</button>
       </div>
     </div>
 
@@ -461,6 +468,98 @@
     <audio id="audio-levelup" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12a8b4e8c5.mp3" preload="auto"></audio>
     <audio id="audio-quest" src="https://cdn.pixabay.com/audio/2022/10/16/audio_128b07b7f2.mp3" preload="auto"></audio>
     <audio id="audio-achievement" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12b2e2a0b5.mp3" preload="auto"></audio>
+
+    <!-- Social Section -->
+<div id="social" class="spa-section">
+  <h2 class="text-xl font-bold mb-4"><i class="fas fa-users"></i> Social Hub</h2>
+  
+  <!-- Friends Section -->
+  <div class="grid md:grid-cols-2 gap-4 mb-8">
+    <div class="rpg-card p-4">
+      <h3 class="text-lg font-bold mb-2">Friends</h3>
+      <div class="flex gap-2 mb-3">
+        <input type="text" id="friend-code" placeholder="Enter friend code" 
+               class="flex-1 px-3 py-1 rounded border dark:bg-gray-700 dark:border-gray-600">
+        <button onclick="addFriend()" class="rpg-btn px-3 py-1 bg-indigo-100 dark:bg-indigo-800 rounded">
+          <i class="fas fa-plus"></i> Add
+        </button>
+      </div>
+      <div id="friends-list" class="space-y-2">
+        <!-- Friends will be listed here -->
+      </div>
+    </div>
+    
+    <div class="rpg-card p-4">
+      <h3 class="text-lg font-bold mb-2">Leaderboard</h3>
+      <div class="space-y-2" id="leaderboard">
+        <!-- Leaderboard entries will appear here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Group Quests -->
+  <div class="rpg-card p-4 mb-8">
+    <h3 class="text-lg font-bold mb-2">Group Quests</h3>
+    <div id="group-quests" class="space-y-4">
+      <!-- Group quests will appear here -->
+    </div>
+  </div>
+
+  <!-- Social Feed -->
+  <div class="rpg-card p-4">
+    <h3 class="text-lg font-bold mb-2">Activity Feed</h3>
+    <div id="social-feed" class="space-y-3">
+      <!-- Social feed entries will appear here -->
+    </div>
+  </div>
+</div>
+
+<!-- Analytics Section -->
+<div id="analytics" class="spa-section">
+  <h2 class="text-xl font-bold mb-4"><i class="fas fa-chart-line"></i> Analytics</h2>
+  
+  <!-- Overview Cards -->
+  <div class="grid md:grid-cols-3 gap-4 mb-8">
+    <div class="rpg-card p-4">
+      <h3 class="font-bold mb-2">Completion Rate</h3>
+      <div id="completion-rate" class="text-3xl font-bold text-center text-indigo-600 dark:text-indigo-400">
+        --
+      </div>
+    </div>
+    <div class="rpg-card p-4">
+      <h3 class="font-bold mb-2">Current Streak</h3>
+      <div id="current-streak" class="text-3xl font-bold text-center text-green-600 dark:text-green-400">
+        --
+      </div>
+    </div>
+    <div class="rpg-card p-4">
+      <h3 class="font-bold mb-2">Total XP</h3>
+      <div id="total-xp" class="text-3xl font-bold text-center text-purple-600 dark:text-purple-400">
+        --
+      </div>
+    </div>
+  </div>
+
+  <!-- Charts -->
+  <div class="grid md:grid-cols-2 gap-4 mb-8">
+    <div class="rpg-card p-4">
+      <h3 class="font-bold mb-2">Progress Over Time</h3>
+      <canvas id="progress-chart" height="200"></canvas>
+    </div>
+    <div class="rpg-card p-4">
+      <h3 class="font-bold mb-2">Quest Categories</h3>
+      <canvas id="categories-chart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Detailed Stats -->
+  <div class="rpg-card p-4">
+    <h3 class="font-bold mb-2">Quest Insights</h3>
+    <div id="quest-insights" class="space-y-4">
+      <!-- Quest insights will appear here -->
+    </div>
+  </div>
+</div>
     
     <!-- Footer -->
     <footer class="mt-16 text-center text-indigo-500 dark:text-indigo-200 border-t border-indigo-200 dark:border-indigo-700 pt-6">
@@ -1042,6 +1141,186 @@ function gainXP(amount) {
   }
 }
 
+    // --- Social Features ---
+let friends = JSON.parse(localStorage.getItem('rpg-friends') || '[]');
+let socialFeed = JSON.parse(localStorage.getItem('rpg-social-feed') || '[]');
+
+// Generate a unique friend code if not exists
+if (!localStorage.getItem('friend-code')) {
+  localStorage.setItem('friend-code', 'HoH-' + Math.random().toString(36).substr(2, 9).toUpperCase());
+}
+
+function addFriend() {
+  const code = document.getElementById('friend-code').value.trim();
+  if (code && !friends.includes(code)) {
+    friends.push(code);
+    localStorage.setItem('rpg-friends', JSON.stringify(friends));
+    renderFriendsList();
+    // In a real app, this would validate the friend code on a server
+  }
+  document.getElementById('friend-code').value = '';
+}
+
+function renderFriendsList() {
+  const list = document.getElementById('friends-list');
+  if (!list) return;
+  
+  if (friends.length === 0) {
+    list.innerHTML = '<div class="text-gray-500">No friends added yet. Share your friend code: ' + 
+      localStorage.getItem('friend-code') + '</div>';
+    return;
+  }
+  
+  list.innerHTML = friends.map(friend => `
+    <div class="flex items-center justify-between p-2 bg-white dark:bg-gray-700 rounded">
+      <span>${friend}</span>
+      <button onclick="removeFriend('${friend}')" class="text-red-500">
+        <i class="fas fa-times"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+function removeFriend(code) {
+  friends = friends.filter(f => f !== code);
+  localStorage.setItem('rpg-friends', JSON.stringify(friends));
+  renderFriendsList();
+}
+
+function addToSocialFeed(action) {
+  socialFeed.unshift({
+    user: hero.name || 'Hero',
+    action,
+    timestamp: new Date().toISOString()
+  });
+  if (socialFeed.length > 50) socialFeed.pop(); // Keep only last 50 entries
+  localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
+  renderSocialFeed();
+}
+
+function renderSocialFeed() {
+  const feed = document.getElementById('social-feed');
+  if (!feed) return;
+  
+  if (socialFeed.length === 0) {
+    feed.innerHTML = '<div class="text-gray-500">No activity yet</div>';
+    return;
+  }
+  
+  feed.innerHTML = socialFeed.map(entry => `
+    <div class="p-2 bg-white dark:bg-gray-700 rounded">
+      <span class="font-bold">${entry.user}</span>
+      ${entry.action}
+      <div class="text-xs text-gray-500 mt-1">
+        ${new Date(entry.timestamp).toLocaleString()}
+      </div>
+    </div>
+  `).join('');
+}
+
+// --- Analytics Features ---
+function updateAnalytics() {
+  // Calculate completion rate
+  const completionRate = habits.length ? 
+    Math.round((habits.filter(h => h.completedToday).length / habits.length) * 100) : 0;
+  
+  // Find highest streak
+  const highestStreak = Math.max(...habits.map(h => h.streak || 0), 0);
+  
+  // Calculate total XP (simplified version)
+  const totalXP = hero.xp + (hero.level - 1) * xpToNext(hero.level);
+  
+  // Update overview cards
+  document.getElementById('completion-rate')?.textContent = completionRate + '%';
+  document.getElementById('current-streak')?.textContent = highestStreak;
+  document.getElementById('total-xp')?.textContent = totalXP;
+  
+  renderProgressChart();
+  renderCategoriesChart();
+  renderQuestInsights();
+}
+
+function renderProgressChart() {
+  const ctx = document.getElementById('progress-chart')?.getContext('2d');
+  if (!ctx) return;
+  
+  // Sample data - in a real app, this would use historical data
+  const data = {
+    labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+    datasets: [{
+      label: 'Completed Quests',
+      data: [4, 5, 3, 6, 4, 5, 4],
+      borderColor: '#6366f1',
+      tension: 0.4
+    }]
+  };
+  
+  // If using Chart.js (add script: https://cdn.jsdelivr.net/npm/chart.js)
+  new Chart(ctx, {
+    type: 'line',
+    data: data,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+}
+
+function renderCategoriesChart() {
+  const ctx = document.getElementById('categories-chart')?.getContext('2d');
+  if (!ctx) return;
+  
+  // Count quests by type
+  const counts = habits.reduce((acc, h) => {
+    acc[h.type] = (acc[h.type] || 0) + 1;
+    return acc;
+  }, {});
+  
+  const data = {
+    labels: Object.keys(counts),
+    datasets: [{
+      data: Object.values(counts),
+      backgroundColor: ['#6366f1', '#4ade80', '#f472b6', '#facc15']
+    }]
+  };
+  
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: data,
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom' }
+      }
+    }
+  });
+}
+
+function renderQuestInsights() {
+  const insights = document.getElementById('quest-insights');
+  if (!insights) return;
+  
+  // Calculate some basic insights
+  const totalQuests = habits.length;
+  const completedToday = habits.filter(h => h.completedToday).length;
+  const averageStreak = habits.reduce((acc, h) => acc + (h.streak || 0), 0) / totalQuests || 0;
+  
+  insights.innerHTML = `
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <h4 class="font-bold">Today's Progress</h4>
+        <p>${completedToday} of ${totalQuests} quests completed</p>
+      </div>
+      <div>
+        <h4 class="font-bold">Average Streak</h4>
+        <p>${averageStreak.toFixed(1)} days</p>
+      </div>
+    </div>
+  `;
+}
+
 // Initialize everything
 function initializeApp() {
   renderIconPicker(questIcons[0]);
@@ -1054,6 +1333,9 @@ function initializeApp() {
   renderShopPage();
   renderStatsPage();
   renderSettingsPage();
+  renderFriendsList();
+  renderSocialFeed(); 
+  updateAnalytics();  
   grantAchievements();
   updateCustomizerVisibility();
 }
