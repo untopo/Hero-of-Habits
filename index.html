@@ -779,6 +779,8 @@ closeModalBtn.addEventListener('click', () => {
             case "questlog": renderQuestLogPage(); break;
             case "dashboard": renderHabits(); break;
             case "settings": renderSettingsPage(); break;
+            case "social": renderFriendsList(); renderSocialFeed(); break;
+            case "analytics": updateAnalytics(); break;
           }
         }
       });
@@ -1321,24 +1323,6 @@ function renderQuestInsights() {
   `;
 }
 
-    function grantAchievements() {
-  allAchievements.forEach(ach => {
-    if (!hero.achievements.includes(ach.key) && ach.unlocked()) {
-      hero.achievements.push(ach.key);
-      ach.onUnlock();
-      
-      // Add to quest log
-      questLog.unshift({
-        date: new Date().toLocaleString(),
-        action: `Achievement unlocked: ${ach.name}`
-      });
-      
-      playSound('audio-achievement');
-    }
-  });
-  localStorage.setItem('rpg-hero', JSON.stringify(hero));
-  localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
-}
 
 function renderAvatar() {
   // Update equipped items display
@@ -1444,6 +1428,78 @@ function renderAvatar() {
   localStorage.setItem('rpg-hero', JSON.stringify(hero));
   localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
 }
+
+function exportData() {
+  const data = {
+    hero,
+    habits,
+    questLog,
+    equipped,
+    friends,
+    socialFeed,
+    avatarCustomization
+  };
+  
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'hero-of-habits-backup.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+document.getElementById('import-data').addEventListener('change', function(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      
+      // Validate data structure
+      if (!data.hero || !data.habits || !data.questLog) {
+        throw new Error('Invalid backup file');
+      }
+      
+      // Import data
+      hero = data.hero;
+      habits = data.habits;
+      questLog = data.questLog;
+      equipped = data.equipped || {};
+      friends = data.friends || [];
+      socialFeed = data.socialFeed || [];
+      
+      if (data.avatarCustomization) {
+        Object.assign(avatarCustomization, data.avatarCustomization);
+        Object.entries(avatarCustomization).forEach(([part, color]) => {
+          if (part !== 'confirmed') {
+            updateAvatarPart(part, color);
+          }
+        });
+      }
+      
+      // Save all data
+      localStorage.setItem('rpg-hero', JSON.stringify(hero));
+      localStorage.setItem('rpg-habits', JSON.stringify(habits));
+      localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+      localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+      localStorage.setItem('rpg-friends', JSON.stringify(friends));
+      localStorage.setItem('rpg-social-feed', JSON.stringify(socialFeed));
+      
+      // Refresh UI
+      initializeApp();
+      
+      alert('Data imported successfully!');
+    } catch (err) {
+      alert('Error importing data: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+});
 
 // Initialize everything
 function initializeApp() {
