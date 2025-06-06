@@ -1451,7 +1451,6 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-document.getElementById('import-data').addEventListener('change', function(e) {
   const file = e.target.files[0];
   if (!file) return;
   
@@ -1514,11 +1513,11 @@ document.getElementById('import-data').addEventListener('change', function(e) {
       hour12: false 
     });
 }
-setInterval(updateLocalTime, 1000); // Update every second
 
 // Initialize everything
 function initializeApp() {
   updateLocalTime();
+  setInterval(updateLocalTime, 1000);
   renderIconPicker(questIcons[0]);
   updateHeroDisplay();
   renderHabits();
@@ -1545,6 +1544,7 @@ function initializeApp() {
   }
 }
     document.addEventListener('DOMContentLoaded', initializeApp);
+    document.getElementById('import-data').addEventListener('change', function(e) {
   </script>
 </body>
 </html>
