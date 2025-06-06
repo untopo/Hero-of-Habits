@@ -12,7 +12,7 @@
     body, .rpg-font { font-family: 'Press Start 2P', monospace, sans-serif; }
     .rpg-card { border: 3px solid #a78bfa; border-radius: 1rem; box-shadow: 0 2px 12px #8b5cf633; }
     .rpg-glow { box-shadow: 0 0 20px 4px #3b82f6cc, 0 0 0 2px #a78bfa; }
-    .level-up { animation: levelup-pop 0.8s; }
+    .level-up { animation: levelup-pop 0.function updateLocalTime() {; }
     @keyframes levelup-pop {
       0% { transform: scale(1);}
       20% { transform: scale(1.2) rotate(-2deg);}
@@ -1480,9 +1480,6 @@ function exportData() {
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
 }
-
-  document.addEventListener('DOMContentLoaded', function() {
-  initializeApp();
   
   document.getElementById('import-data').addEventListener('change', function(e) {
     const file = e.target.files[0];
