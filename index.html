@@ -532,7 +532,7 @@ habitForm.addEventListener('submit', function(e) {
   const type = document.getElementById('habit-type').value;
   const kind = document.getElementById('habit-kind').value;
 
-  const newHabit = { 
+  const habitData = { 
     name, 
     goal, 
     icon, 
@@ -544,17 +544,44 @@ habitForm.addEventListener('submit', function(e) {
     completedToday: false 
   };
 
-  habits.push(newHabit);
+  if (editingHabit !== null) {
+    // Preserve progress and streak when editing
+    habitData.progress = habits[editingHabit].progress || 0;
+    habitData.streak = habits[editingHabit].streak || 0;
+    habitData.lastDate = habits[editingHabit].lastDate;
+    habitData.completedToday = habits[editingHabit].completedToday;
+    
+    habits[editingHabit] = habitData;
+    
+    // Add to quest log
+    questLog.unshift({
+      date: new Date().toLocaleString(),
+      action: `Quest edited: ${name}`
+    });
+  } else {
+    habits.push(habitData);
+    
+    // Add to quest log
+    questLog.unshift({
+      date: new Date().toLocaleString(),
+      action: `New quest added: ${name}`
+    });
+  }
+
   localStorage.setItem('rpg-habits', JSON.stringify(habits));
-  habitModal.classList.add('hidden');
-  renderHabits();
-  
-  // Add to quest log
-  questLog.unshift({
-    date: new Date().toLocaleString(),
-    action: `New quest added: ${name}`
-  });
   localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+  
+  habitModal.classList.add('hidden');
+  editingHabit = null;
+  document.getElementById('modal-title').textContent = 'New Quest';
+  renderHabits();
+});
+
+// Reset editing state when closing modal
+closeModalBtn.addEventListener('click', () => {
+  habitModal.classList.add('hidden');
+  editingHabit = null;
+  document.getElementById('modal-title').textContent = 'New Quest';
 });
     
     // --- Avatar Customization System ---
@@ -905,7 +932,15 @@ function showConfetti() {
         <div class="flex-1">
           <div class="flex justify-between items-center">
             <span class="font-semibold text-lg">${habit.name}</span>
-            <span class="rpg-quest">${habit.type[0].toUpperCase() + habit.type.slice(1)}</span>
+            <div class="flex items-center gap-2">
+              <span class="rpg-quest">${habit.type[0].toUpperCase() + habit.type.slice(1)}</span>
+              <button onclick="editHabit(${idx})" class="text-indigo-700 dark:text-indigo-300 hover:scale-110 transition">
+                <i class="fas fa-edit"></i>
+              </button>
+              <button onclick="deleteHabit(${idx})" class="text-red-600 dark:text-red-400 hover:scale-110 transition">
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
           </div>
           <div class="w-full bg-gradient-to-r from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full h-4 mt-2">
             <div class="rpg-xp-bar h-4 rounded-full rpg-glow" style="width:${percent}%"></div>
@@ -924,6 +959,41 @@ function showConfetti() {
       </div>`;
   });
 }
+
+function editHabit(idx) {
+  editingHabit = idx;
+  const habit = habits[idx];
+  
+  // Populate the modal with habit data
+  document.getElementById('modal-title').textContent = 'Edit Quest';
+  document.getElementById('habit-name').value = habit.name;
+  document.getElementById('habit-goal').value = habit.goal;
+  document.getElementById('habit-type').value = habit.type;
+  document.getElementById('habit-kind').value = habit.kind || 'recurring';
+  document.getElementById('habit-icon').value = habit.icon;
+  
+  // Show the modal
+  habitModal.classList.remove('hidden');
+  renderIconPicker(habit.icon);
+}
+
+function deleteHabit(idx) {
+  if (confirm('Are you sure you want to delete this quest? This cannot be undone!')) {
+    const habitName = habits[idx].name;
+    habits.splice(idx, 1);
+    localStorage.setItem('rpg-habits', JSON.stringify(habits));
+    
+    // Add to quest log
+    questLog.unshift({
+      date: new Date().toLocaleString(),
+      action: `Quest deleted: ${habitName}`
+    });
+    localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+    
+    renderHabits();
+  }
+}
+    
 
 function updateHabitProgress(idx, delta) {
   let h = habits[idx];
