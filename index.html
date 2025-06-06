@@ -508,6 +508,55 @@ document.getElementById('theme-select').addEventListener('change', function(e) {
   localStorage.setItem('theme', theme);
 });
 
+// Modal controls
+const habitModal = document.getElementById('habit-modal');
+const addHabitBtn = document.getElementById('add-habit-btn');
+const closeModalBtn = document.getElementById('close-modal');
+const habitForm = document.getElementById('habit-form');
+
+addHabitBtn.addEventListener('click', () => {
+  habitModal.classList.remove('hidden');
+  habitForm.reset();
+  renderIconPicker(questIcons[0]); // Set default icon
+});
+
+closeModalBtn.addEventListener('click', () => {
+  habitModal.classList.add('hidden');
+});
+
+habitForm.addEventListener('submit', function(e) {
+  e.preventDefault();
+  const name = document.getElementById('habit-name').value;
+  const goal = parseInt(document.getElementById('habit-goal').value);
+  const icon = document.getElementById('habit-icon').value || questIcons[0];
+  const type = document.getElementById('habit-type').value;
+  const kind = document.getElementById('habit-kind').value;
+
+  const newHabit = { 
+    name, 
+    goal, 
+    icon, 
+    type,
+    kind,
+    progress: 0, 
+    streak: 0, 
+    lastDate: todayISO(), 
+    completedToday: false 
+  };
+
+  habits.push(newHabit);
+  localStorage.setItem('rpg-habits', JSON.stringify(habits));
+  habitModal.classList.add('hidden');
+  renderHabits();
+  
+  // Add to quest log
+  questLog.unshift({
+    date: new Date().toLocaleString(),
+    action: `New quest added: ${name}`
+  });
+  localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+});
+    
     // --- Avatar Customization System ---
     const avatarCustomization = {
       skin: localStorage.getItem('avatar-skin') || '#ffd8b2',
@@ -648,24 +697,25 @@ document.getElementById('theme-select').addEventListener('change', function(e) {
 
     // ---- Icon Picker ----
     const questIcons = [
-      "fa-dumbbell", "fa-book", "fa-mug-hot", "fa-bolt", "fa-seedling", "fa-water",
-      "fa-brain", "fa-running", "fa-mountain", "fa-paw", "fa-heart", "fa-music",
-      "fa-leaf", "fa-medal", "fa-star", "fa-fire", "fa-code", "fa-apple-alt",
-      "fa-bed", "fa-bicycle", "fa-broom", "fa-chess", "fa-gamepad", "fa-fish",
-      "fa-peace", "fa-shield-alt", "fa-dog", "fa-cat", "fa-campground", "fa-tree",
-      "fa-rocket"
-    ];
+  "💪", "📚", "☕️", "⚡️", "🌱", "💧",
+  "🧠", "🏃", "⛰️", "🐾", "❤️", "🎵",
+  "🍃", "🏅", "⭐️", "🔥", "💻", "🍎",
+  "🛏️", "🚲", "🧹", "♟️", "🎮", "🐟",
+  "☮️", "🛡️", "🐕", "🐱", "⛺️", "🌲",
+  "🚀"
+];
 
     function renderIconPicker(selectedIcon) {
-      const picker = document.getElementById('icon-picker');
-      picker.innerHTML = questIcons.map(icon => `
-        <button type="button" class="p-2 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition
-          ${selectedIcon === icon ? 'bg-indigo-300 dark:bg-indigo-700 ring-2 ring-indigo-500' : ''}"
-          onclick="document.getElementById('habit-icon').value='${icon}';renderIconPicker('${icon}')">
-          <i class="fas ${icon} text-2xl"></i>
-        </button>
-      `).join('');
-    }
+  const picker = document.getElementById('icon-picker');
+  picker.innerHTML = questIcons.map(icon => `
+    <button type="button" class="p-2 rounded hover:bg-indigo-200 dark:hover:bg-indigo-800 transition
+      ${selectedIcon === icon ? 'bg-indigo-300 dark:bg-indigo-700 ring-2 ring-indigo-500' : ''}"
+      onclick="document.getElementById('habit-icon').value='${icon}';renderIconPicker('${icon}')"
+      style="font-size: 1.5rem;">
+      ${icon}
+    </button>
+  `).join('');
+}
 
     // ---- Equipment & Items ----
     const allItems = [
@@ -833,6 +883,95 @@ function showConfetti() {
   setTimeout(()=>{ confetti.classList.add('hidden'); }, 1300);
 }
 
+    function renderHabits() {
+  const habitsList = document.getElementById('habits-list');
+  habitsList.innerHTML = "";
+  habits.forEach((habit, idx) => {
+    if (habit.lastDate !== todayISO()) { 
+      habit.progress = 0; 
+      habit.completedToday = false; 
+    }
+    const percent = Math.min(100, Math.round(((habit.progress||0) / habit.goal) * 100));
+    let typeColor = {
+      mind: "from-blue-200 to-blue-500 dark:from-blue-900 dark:to-blue-800",
+      body: "from-green-200 to-green-500 dark:from-green-900 dark:to-green-800",
+      social: "from-pink-200 to-pink-500 dark:from-pink-900 dark:to-pink-800",
+      other: "from-yellow-200 to-yellow-500 dark:from-yellow-900 dark:to-yellow-800"
+    }[habit.type] || "from-indigo-200 to-indigo-500";
+    
+    habitsList.innerHTML += `
+      <div class="rpg-card bg-gradient-to-br ${typeColor} p-5 flex flex-col gap-2 md:flex-row items-center shadow-lg relative">
+        <div class="text-4xl mr-4">${habit.icon || '⭐️'}</div>
+        <div class="flex-1">
+          <div class="flex justify-between items-center">
+            <span class="font-semibold text-lg">${habit.name}</span>
+            <span class="rpg-quest">${habit.type[0].toUpperCase() + habit.type.slice(1)}</span>
+          </div>
+          <div class="w-full bg-gradient-to-r from-gray-100 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full h-4 mt-2">
+            <div class="rpg-xp-bar h-4 rounded-full rpg-glow" style="width:${percent}%"></div>
+          </div>
+          <div class="flex items-center gap-2 mt-2">
+            <button class="bg-indigo-500 text-white px-2 py-1 rounded rpg-btn hover:bg-indigo-600" onclick="updateHabitProgress(${idx},1)">
+              <i class="fas fa-plus"></i>
+            </button>
+            <button class="bg-gray-300 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-2 py-1 rounded rpg-btn hover:bg-gray-400 dark:hover:bg-gray-600" onclick="updateHabitProgress(${idx},-1)">
+              <i class="fas fa-minus"></i>
+            </button>
+            <span class="ml-2 font-mono text-indigo-900 dark:text-indigo-200">${habit.progress||0} / ${habit.goal}</span>
+            <span class="ml-4 text-xs">Streak: <span class="font-bold text-yellow-600 dark:text-yellow-300">${habit.streak||0}</span> <i class="fas fa-fire text-orange-400 animate-beat"></i></span>
+          </div>
+        </div>
+      </div>`;
+  });
+}
+
+function updateHabitProgress(idx, delta) {
+  let h = habits[idx];
+  if (!h.progress || h.lastDate !== todayISO()) {
+    h.progress = 0;
+    h.lastDate = todayISO();
+  }
+  h.progress = Math.max(0, h.progress + delta);
+  if (h.progress === h.goal && !h.completedToday) {
+    h.streak = (h.streak || 0) + 1;
+    h.completedToday = true;
+    gainXP(xpPerHabit + Math.min(5 * h.streak, 25));
+    playSound('audio-quest');
+  } else if (h.progress < h.goal) {
+    h.completedToday = false;
+  }
+  localStorage.setItem('rpg-habits', JSON.stringify(habits));
+  renderHabits();
+}
+
+function updateHeroDisplay() {
+  document.getElementById('hero-level').textContent = hero.level;
+  document.getElementById('hero-xp').textContent = `${hero.xp}/${xpToNext(hero.level)}`;
+  document.getElementById('coins').textContent = `${hero.coins || 0}`;
+  let percent = Math.min(100, Math.round((hero.xp / xpToNext(hero.level))*100));
+  document.getElementById('xp-bar').style.width = percent + "%";
+}
+
+function gainXP(amount) {
+  hero.xp += amount;
+  let leveled = false;
+  while (hero.xp >= xpToNext(hero.level)) {
+    hero.xp -= xpToNext(hero.level);
+    hero.level += 1;
+    leveled = true;
+  }
+  localStorage.setItem('rpg-hero', JSON.stringify(hero));
+  updateHeroDisplay();
+  if (leveled) {
+    document.getElementById('levelup-badge').classList.remove('hidden');
+    playSound('audio-levelup');
+    showConfetti();
+    setTimeout(()=>{
+      document.getElementById('levelup-badge').classList.add('hidden');
+    }, 1800);
+  }
+}
+
 // Initialize everything
 function initializeApp() {
   renderIconPicker(questIcons[0]);
@@ -850,6 +989,13 @@ function initializeApp() {
 }
 
     // Call initialize function when document is ready
+    function playSound(id) {
+  const sound = document.getElementById(id);
+  if (sound && document.getElementById('sound-toggle').checked) {
+    sound.currentTime = 0;
+    sound.play().catch(err => console.log('Audio playback prevented'));
+  }
+}
     document.addEventListener('DOMContentLoaded', initializeApp);
   </script>
 </body>
