@@ -1321,6 +1321,130 @@ function renderQuestInsights() {
   `;
 }
 
+    function grantAchievements() {
+  allAchievements.forEach(ach => {
+    if (!hero.achievements.includes(ach.key) && ach.unlocked()) {
+      hero.achievements.push(ach.key);
+      ach.onUnlock();
+      
+      // Add to quest log
+      questLog.unshift({
+        date: new Date().toLocaleString(),
+        action: `Achievement unlocked: ${ach.name}`
+      });
+      
+      playSound('audio-achievement');
+    }
+  });
+  localStorage.setItem('rpg-hero', JSON.stringify(hero));
+  localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+}
+
+function renderAvatar() {
+  // Update equipped items display
+  ['hat', 'weapon', 'shield', 'pet'].forEach(slot => {
+    const el = document.getElementById(`avatar-${slot}`);
+    const item = equipped[slot];
+    if (item && hero.items.includes(item)) {
+      const itemData = allItems.find(i => i.name === item);
+      el.innerHTML = `<i class="fas ${itemData.icon}"></i>`;
+    } else {
+      el.innerHTML = '';
+    }
+  });
+
+  // Update background if equipped
+  const bgEl = document.getElementById('avatar-bg');
+  const bgItem = equipped.background;
+  if (bgItem && hero.items.includes(bgItem)) {
+    const itemData = allItems.find(i => i.name === bgItem);
+    bgEl.innerHTML = `<i class="fas ${itemData.icon}"></i>`;
+  } else {
+    bgEl.innerHTML = '';
+  }
+}
+
+    function renderSettingsPage() {
+  const nameInput = document.getElementById('settings-name');
+  nameInput.value = hero.name || '';
+  
+  nameInput.onchange = function() {
+    hero.name = this.value;
+    localStorage.setItem('rpg-hero', JSON.stringify(hero));
+  };
+}
+
+    function getStats() {
+  return {
+    completed: habits.reduce((sum, h) => sum + (h.completedToday ? 1 : 0), 0),
+    totalQuests: habits.length,
+    highestStreak: Math.max(...habits.map(h => h.streak || 0), 0),
+    totalXP: hero.xp + (hero.level - 1) * xpToNext(hero.level)
+  };
+}
+
+    function equipItem(itemName) {
+  if (!hero.items.includes(itemName)) return;
+  
+  const item = allItems.find(i => i.name === itemName);
+  if (!item) return;
+  
+  // Unequip current item in that slot if any
+  if (equipped[item.type]) {
+    if (equipped[item.type] === itemName) {
+      equipped[item.type] = null; // Toggle off
+    } else {
+      equipped[item.type] = itemName; // Switch items
+    }
+  } else {
+    equipped[item.type] = itemName; // Equip new item
+  }
+  
+  localStorage.setItem('rpg-equipped', JSON.stringify(equipped));
+  renderAvatar();
+}
+
+    function buyShopItem(itemName) {
+  const item = shopItems.find(i => i.name === itemName);
+  if (!item || hero.items.includes(itemName)) return;
+  
+  if (hero.coins >= item.price) {
+    hero.coins -= item.price;
+    hero.items.push(itemName);
+    localStorage.setItem('rpg-hero', JSON.stringify(hero));
+    renderShopPage();
+    updateHeroDisplay();
+    
+    // Add to quest log
+    questLog.unshift({
+      date: new Date().toLocaleString(),
+      action: `Bought ${itemName} for ${item.price} coins`
+    });
+    localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+    
+    playSound('audio-achievement');
+  }
+}
+
+    function grantAchievements() {
+  allAchievements.forEach(ach => {
+    if (!hero.achievements.includes(ach.key) && ach.unlocked()) {
+      hero.achievements.push(ach.key);
+      ach.onUnlock();
+      
+      // Add to quest log
+      questLog.unshift({
+        date: new Date().toLocaleString(),
+        action: `Achievement unlocked: ${ach.name}`
+      });
+      
+      playSound('audio-achievement');
+    }
+  });
+  localStorage.setItem('rpg-hero', JSON.stringify(hero));
+  localStorage.setItem('rpg-questlog', JSON.stringify(questLog));
+}
+
 // Initialize everything
 function initializeApp() {
   renderIconPicker(questIcons[0]);
