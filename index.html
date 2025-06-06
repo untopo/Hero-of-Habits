@@ -561,7 +561,7 @@
   </div>
 </div>
     
-    <!-- Footer -->
+       <!-- Footer -->
     <footer class="mt-16 text-center text-indigo-500 dark:text-indigo-200 border-t border-indigo-200 dark:border-indigo-700 pt-6">
       <p>Embark on your journey • <span class="animate-beat text-yellow-400"><i class="fas fa-star"></i></span> by <a href="https://www.instagram.com/otpo/" class="text-indigo-600 hover:underline">Topo</a></p>
       <p class="mt-2 text-xs" id="local-time"></p>
@@ -1024,11 +1024,6 @@ function showConfetti() {
   setTimeout(()=>{ confetti.classList.add('hidden'); }, 1300);
 }
 
-    <script>
-// Existing code remains the same up until line 1000
-
-// Add the following new functions:
-
 function renderHabits() {
   const list = document.getElementById('habits-list');
   list.innerHTML = habits.map((habit, index) => `
@@ -1258,24 +1253,6 @@ function playSound(id) {
     sound.currentTime = 0;
     sound.play().catch(() => {});
   }
-}
-
-function showConfetti() {
-  const confetti = document.getElementById('confetti');
-  confetti.classList.remove('hidden');
-  
-  // Create confetti pieces
-  confetti.innerHTML = Array.from({length: 50}).map(() => {
-    const color = ['#6366f1', '#10b981', '#f59e0b'][Math.floor(Math.random() * 3)];
-    const x = Math.random() * 100;
-    const delay = Math.random() * 0.5;
-    return `<div class="confetti-piece" style="left:${x}vw;background:${color};animation-delay:${delay}s"></div>`;
-  }).join('');
-  
-  setTimeout(() => {
-    confetti.classList.add('hidden');
-    confetti.innerHTML = '';
-  }, 2000);
 }
 
 function equipItem(itemName) {
