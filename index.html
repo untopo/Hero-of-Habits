@@ -757,6 +757,9 @@ const habitForm = document.getElementById('habit-form');
 addHabitBtn.addEventListener('click', () => {
   habitModal.classList.remove('hidden');
   habitForm.reset();
+   document.getElementById('template-category').value = '';
+  document.getElementById('template-quest').innerHTML = '<option value="">Select template...</option>';
+  document.getElementById('template-quest').disabled = true;
   renderIconPicker(questIcons[0]); // Set default icon
 });
 
